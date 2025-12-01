@@ -1,0 +1,128 @@
+﻿<UserControl x:Class="Naviguard.WPF.Views.Pages.FilterPagesNav"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Naviguard.WPF.Views.Pages"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900"
+             Background="Transparent">
+
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="300"/>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition Width="*" MinWidth="300"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="White" CornerRadius="30" Padding="20" Effect="{DynamicResource ShadowEffect}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="Añadir Nueva Página" FontSize="18" FontWeight="Bold" Margin="0,0,0,20" Foreground="#1C1E21"/>
+
+                        <TextBlock Text="Nombre de la Página:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding PageName, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Ingresa el nombre que se mostrará"/>
+
+                        <TextBlock Text="Descripción:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding PageDescription, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Ingresa la descripción"/>
+
+                        <TextBlock Text="URL:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding PageUrl, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Pega la URL completa de la página"/>
+
+                        <CheckBox IsChecked="{Binding RequiresProxy}" Content="Requiere Proxy" FontWeight="SemiBold" Margin="0,0,0,10" Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <CheckBox x:Name="chkRequiresLogin" IsChecked="{Binding RequiresLogin}" Content="Requiere Login" FontWeight="SemiBold" Margin="0,0,0,10" Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <CheckBox x:Name="chkRequiresCustomLogin" IsChecked="{Binding RequiresCustomLogin}" Content="Requiere Custom Login" FontWeight="SemiBold" Margin="0,0,0,10" Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <CheckBox x:Name="chkRequiresRedirects" IsChecked="{Binding RequiresRedirects}" Content="Requiere Redirects" FontWeight="SemiBold" Margin="0,0,0,10" Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <StackPanel>
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="Opacity" Value="0"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ElementName=chkRequiresLogin, Path=IsChecked}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                                            <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}"/>
+                                                        </ObjectAnimationUsingKeyFrames>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                            <DataTrigger.ExitActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:0.3"/>
+                                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Visibility">
+                                                            <DiscreteObjectKeyFrame KeyTime="0:0:0.3" Value="{x:Static Visibility.Collapsed}"/>
+                                                        </ObjectAnimationUsingKeyFrames>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.ExitActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Border BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,10,0,10" Padding="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Usuario:" FontWeight="SemiBold" Margin="0,5,0,5"/>
+                                    <TextBox Text="{Binding CredentialUsername, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Ingrese Usuario"/>
+
+                                    <TextBlock Text="Contraseña:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                    <TextBox Text="{Binding CredentialPassword, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Ingrese Contraseña"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Button Grid.Row="1" Command="{Binding SavePageCommand}" Content="Guardar" Style="{StaticResource PrimaryButtonStyle}" Padding="10,5" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+            </Grid>
+        </Border>
+        <Border Grid.Column="2" Background="White" CornerRadius="30" Padding="20" Effect="{DynamicResource ShadowEffect}" >
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Crear Nuevo Grupo" FontSize="18" FontWeight="Bold" Margin="0,0,0,20" Foreground="#1C1E21"/>
+
+                <StackPanel Grid.Row="1" Margin="0,0,0,15">
+                    <TextBlock Text="Nombre del Grupo:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding GroupName, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Introduce un nombre para el nuevo grupo"/>
+
+                    <TextBlock Grid.Row="1" Text="Descripción:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding GroupDescription, UpdateSourceTrigger=PropertyChanged}" Padding="5" Margin="0,0,0,15" Style="{StaticResource RoundedTextBoxStyle}" Tag="Ingresa la descripción"/>
+                </StackPanel>
+
+                <TextBlock Grid.Row="2" Text="Asignar Páginas:" FontWeight="SemiBold" Margin="0,0,0,5" VerticalAlignment="Top"/>
+                <Border Grid.Row="2" BorderBrush="#DDDFE2" BorderThickness="1" CornerRadius="3" Margin="0,25,0,10">
+                    <ListBox ItemsSource="{Binding AvailablePages}" SelectionMode="Multiple" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding PageName}" IsChecked="{Binding IsSelected}" Margin="5"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <Button Grid.Row="3" Command="{Binding CreateGroupCommand}" Content="Crear" Style="{StaticResource PrimaryButtonStyle}" Padding="10,5" HorizontalAlignment="Left"/>
+            </Grid>
+        </Border>
+    </Grid>
+
+</UserControl>

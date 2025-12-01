@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Naviguard.Application/Naviguard.Application.csproj" />
+  <Project Path="Naviguard.Domain/Naviguard.Domain.csproj" />
+  <Project Path="Naviguard.Infrastructure/Naviguard.Infrastructure.csproj" />
+  <Project Path="Naviguard.WPF/Naviguard.WPF.csproj" />
+</Solution>
