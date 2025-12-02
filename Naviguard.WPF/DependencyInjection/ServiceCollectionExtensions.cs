@@ -12,6 +12,9 @@ using Naviguard.Infrastructure.Repositories;
 using Naviguard.WPF.Services;
 using Naviguard.WPF.ViewModels;
 using Naviguard.WPF.Views;
+using Naviguard.WPF.Views.Groups;
+using Naviguard.WPF.Views.Pages;
+using Naviguard.WPF.Views.Users;
 
 namespace Naviguard.WPF.DependencyInjection
 {
@@ -78,6 +81,7 @@ namespace Naviguard.WPF.DependencyInjection
             services.AddTransient<AssignUserToGroupsViewModel>();
             services.AddTransient<CredentialsUserPageViewModel>();
             services.AddTransient<MenuNaviguardViewModel>();
+            services.AddTransient<BrowserViewModel>(); 
 
             // Views
             services.AddTransient<MenuMain>();

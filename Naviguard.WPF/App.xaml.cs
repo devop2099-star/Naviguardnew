@@ -1,5 +1,4 @@
-﻿// Naviguard.WPF/App.xaml.cs
-using CefSharp;
+﻿using CefSharp;
 using CefSharp.Wpf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,9 +1,16 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿// Naviguard.WPF/Views/MenuMain.xaml.cs
+using Microsoft.Extensions.DependencyInjection;
+using Naviguard.Domain.Entities;
 using Naviguard.WPF.Services;
 using Naviguard.WPF.ViewModels;
+using Naviguard.WPF.Views.Browser;
+using Naviguard.WPF.Views.Groups;
+using Naviguard.WPF.Views.Pages;
+using Naviguard.WPF.Views.Users;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using WpfApp = System.Windows.Application; // ✅ AGREGAR ALIAS
 
 namespace Naviguard.WPF.Views
 {
@@ -58,13 +65,15 @@ namespace Naviguard.WPF.Views
             _navigationService.NavigateTo(groupsView);
         }
 
-        public void NavigateToGroupView(Domain.Entities.Group group)
+        public void NavigateToGroupView(Group group)
         {
             var menuViewModel = ActivatorUtilities.CreateInstance<MenuNaviguardViewModel>(
                 _serviceProvider,
                 group.GroupId);
 
-            var menuView = new Views.Browser.MenuNaviguardPages
+            menuViewModel.OpenPageAction = OpenPageInBrowser;
+
+            var menuView = new MenuNaviguardPages
             {
                 DataContext = menuViewModel
             };
@@ -72,29 +81,55 @@ namespace Naviguard.WPF.Views
             _navigationService.NavigateTo(menuView);
         }
 
+        private async void OpenPageInBrowser(Pagina page)
+        {
+            try
+            {
+                Debug.WriteLine($"Abriendo página en navegador: {page.PageName}");
+
+                var browserViewModel = _serviceProvider.GetRequiredService<BrowserViewModel>();
+                var browserView = new BrowserView();
+
+                _navigationService.NavigateTo(browserView);
+
+                await browserView.InitializeAsync(browserViewModel, page);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al abrir navegador: {ex.Message}", "Error");
+                Debug.WriteLine($"Error: {ex}");
+            }
+        }
+
         private void btnFilterPages_Click(object sender, RoutedEventArgs e)
         {
+            var viewModel = _serviceProvider.GetRequiredService<FilterPagesViewModel>();
             var view = _serviceProvider.GetRequiredService<FilterPagesNav>();
+            view.DataContext = viewModel;
             _navigationService.NavigateTo(view);
         }
 
         private void btnEditGroups_Click(object sender, RoutedEventArgs e)
         {
+            var viewModel = _serviceProvider.GetRequiredService<EditGroupsViewModel>();
             var view = _serviceProvider.GetRequiredService<EditGroups>();
+            view.DataContext = viewModel;
             _navigationService.NavigateTo(view);
         }
 
         private void btnAssignUserToGroups_Click(object sender, RoutedEventArgs e)
         {
+            var viewModel = _serviceProvider.GetRequiredService<AssignUserToGroupsViewModel>();
             var view = _serviceProvider.GetRequiredService<AssignUserToGroups>();
+            view.DataContext = viewModel;
             _navigationService.NavigateTo(view);
         }
 
         private void btnLogout_Click(object sender, RoutedEventArgs e)
         {
             UserSession.EndSession();
-            Process.Start(Process.GetCurrentProcess().MainModule.FileName);
-            Application.Current.Shutdown();
+            Process.Start(Process.GetCurrentProcess().MainModule!.FileName!);
+            WpfApp.Current.Shutdown(); // ✅ CORREGIDO - Usar el alias
         }
     }
 }

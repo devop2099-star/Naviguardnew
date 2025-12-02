@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:Naviguard.WPF.Views.Groups"
              xmlns:vm="clr-namespace:Naviguard.WPF.ViewModels"
              xmlns:converters="clr-namespace:Naviguard.WPF.Converters"
-             mc:Ignorable="d" 
+             mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="900"
              Background="White">
 

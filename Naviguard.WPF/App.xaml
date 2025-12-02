@@ -1,9 +1,23 @@
 ﻿<Application x:Class="Naviguard.WPF.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Naviguard.WPF"
-             StartupUri="MenuMain.xaml">
+             xmlns:converters="clr-namespace:Naviguard.WPF.Converters"
+             xmlns:animations="clr-namespace:Naviguard.WPF.Animations"
+             StartupUri="Views/MenuMain.xaml">
     <Application.Resources>
-         
+        
+        <ResourceDictionary>
+            
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Assets/Styles.xaml"/>
+                <ResourceDictionary Source="Assets/Icons.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:SizeToRectConverter x:Key="SizeToRectConverter"/>
+
+        </ResourceDictionary>
+        
     </Application.Resources>
 </Application>

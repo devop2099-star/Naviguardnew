@@ -1,28 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using Naviguard.Domain.Entities;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Naviguard.WPF.ViewModels;
 
 namespace Naviguard.WPF.Views.Browser
 {
-    /// <summary>
-    /// Lógica de interacción para MenuNaviguardPages.xaml
-    /// </summary>
     public partial class MenuNaviguardPages : UserControl
     {
         public MenuNaviguardPages()
         {
             InitializeComponent();
+        }
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0 && e.AddedItems[0] is Pagina selectedPage)
+            {
+                if (DataContext is MenuNaviguardViewModel viewModel)
+                {
+                    viewModel.OpenPageCommand.Execute(selectedPage);
+                }
+            }
         }
     }
 }
