@@ -3,7 +3,7 @@ using System.Windows.Data;
 
 namespace Naviguard.WPF.Converters
 {
-    public class InverseBoolConverter : IValueConverter
+    public class InverseBooleanConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

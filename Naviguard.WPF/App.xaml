@@ -3,21 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:Naviguard.WPF.Converters"
              xmlns:animations="clr-namespace:Naviguard.WPF.Animations"
-             StartupUri="Views/MenuMain.xaml">
+             StartupUri="Views/Login/Login.xaml">
     <Application.Resources>
-        
+
         <ResourceDictionary>
-            
+
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Assets/Styles.xaml"/>
                 <ResourceDictionary Source="Assets/Icons.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- ✅ Convertidor normal (false = Collapsed, true = Visible) -->
             <converters:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+
+            <!-- ✅ Convertidor invertido (true = Collapsed, false = Visible) -->
+            <converters:BooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter" Invert="True"/>
+
+            <!-- ✅ Convertidor para invertir booleanos -->
+            <converters:InverseBooleanConverter x:Key="InverseBoolConverter"/>
+
+            <!-- ✅ Convertidor de tamaño a rectángulo -->
             <converters:SizeToRectConverter x:Key="SizeToRectConverter"/>
 
         </ResourceDictionary>
-        
+
     </Application.Resources>
 </Application>

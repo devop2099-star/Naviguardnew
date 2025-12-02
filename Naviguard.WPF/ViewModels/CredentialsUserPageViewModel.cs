@@ -149,5 +149,6 @@ namespace Naviguard.WPF.ViewModels
             Username = string.Empty;
             Password = string.Empty;
         }
+
     }
 }

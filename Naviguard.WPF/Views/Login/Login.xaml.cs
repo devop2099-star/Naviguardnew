@@ -1,8 +1,8 @@
 ﻿// Naviguard.WPF/Views/Login/Login.xaml.cs
 using Naviguard.Infrastructure.ExternalServices;
 using Naviguard.WPF.Services;
-using Naviguard.WPF.Views;
 using System.Windows;
+using WpfApp = System.Windows.Application;
 using System.Windows.Input;
 using System.Windows.Media;
 using Naviguard.Domain.Interfaces;
@@ -110,7 +110,7 @@ namespace Naviguard.WPF.Views.Login
 
         private void btnClose_Click(object sender, RoutedEventArgs e)
         {
-            Application.Current.Shutdown();
+            WpfApp.Current.Shutdown();
         }
     }
 }

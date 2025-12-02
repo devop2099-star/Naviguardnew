@@ -1,5 +1,4 @@
-﻿// Naviguard.WPF/Views/MenuMain.xaml.cs
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Naviguard.Domain.Entities;
 using Naviguard.WPF.Services;
 using Naviguard.WPF.ViewModels;
@@ -10,7 +9,7 @@ using Naviguard.WPF.Views.Users;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
-using WpfApp = System.Windows.Application; // ✅ AGREGAR ALIAS
+using WpfApp = System.Windows.Application;
 
 namespace Naviguard.WPF.Views
 {
@@ -39,7 +38,8 @@ namespace Naviguard.WPF.Views
             btnEditGroups.Visibility = adminVisibility;
             btnAssignUserToGroups.Visibility = adminVisibility;
 
-            btnNav_Click(null, null);
+            // ✅ Corregido - usar objeto anónimo en lugar de null
+            btnNav_Click(this, new RoutedEventArgs());
         }
 
         private void MainBorder_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -56,13 +56,39 @@ namespace Naviguard.WPF.Views
 
         private void btnNav_Click(object sender, RoutedEventArgs e)
         {
-            var groupsViewModel = _serviceProvider.GetRequiredService<GroupsPagesViewModel>();
-            groupsViewModel.NavigateToGroupAction = NavigateToGroupView;
+            try
+            {
+                Debug.WriteLine("🔄 Navegando a vista de grupos...");
 
-            var groupsView = _serviceProvider.GetRequiredService<GroupsPages>();
-            groupsView.DataContext = groupsViewModel;
+                var groupsViewModel = _serviceProvider.GetRequiredService<GroupsPagesViewModel>();
 
-            _navigationService.NavigateTo(groupsView);
+                if (groupsViewModel == null)
+                {
+                    MessageBox.Show("No se pudo cargar el ViewModel de grupos", "Error");
+                    return;
+                }
+
+                groupsViewModel.NavigateToGroupAction = NavigateToGroupView;
+
+                var groupsView = _serviceProvider.GetRequiredService<GroupsPages>();
+
+                if (groupsView == null)
+                {
+                    MessageBox.Show("No se pudo cargar la vista de grupos", "Error");
+                    return;
+                }
+
+                groupsView.DataContext = groupsViewModel;
+                _navigationService.NavigateTo(groupsView);
+
+                Debug.WriteLine("✅ Vista de grupos cargada correctamente");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"❌ Error en btnNav_Click: {ex.Message}");
+                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+                MessageBox.Show($"Error al cargar grupos: {ex.Message}", "Error");
+            }
         }
 
         public void NavigateToGroupView(Group group)
@@ -129,7 +155,7 @@ namespace Naviguard.WPF.Views
         {
             UserSession.EndSession();
             Process.Start(Process.GetCurrentProcess().MainModule!.FileName!);
-            WpfApp.Current.Shutdown(); // ✅ CORREGIDO - Usar el alias
+            WpfApp.Current.Shutdown();
         }
     }
 }

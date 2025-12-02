@@ -6,11 +6,15 @@ namespace Naviguard.WPF.Converters
 {
     public class BooleanToVisibilityConverter : IValueConverter
     {
+        public bool Invert { get; set; }
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is bool boolValue)
             {
-                return boolValue ? Visibility.Visible : Visibility.Collapsed;
+                // Si Invert = true, invertimos la lógica
+                bool result = Invert ? !boolValue : boolValue;
+                return result ? Visibility.Visible : Visibility.Collapsed;
             }
             return Visibility.Collapsed;
         }
@@ -19,7 +23,8 @@ namespace Naviguard.WPF.Converters
         {
             if (value is Visibility visibility)
             {
-                return visibility == Visibility.Visible;
+                bool result = visibility == Visibility.Visible;
+                return Invert ? !result : result;
             }
             return false;
         }

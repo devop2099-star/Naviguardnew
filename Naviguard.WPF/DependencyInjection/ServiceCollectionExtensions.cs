@@ -1,5 +1,4 @@
-﻿// Naviguard.WPF/DependencyInjection/ServiceCollectionExtensions.cs
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Naviguard.Application.Interfaces;
 using Naviguard.Application.Services;
@@ -74,14 +73,14 @@ namespace Naviguard.WPF.DependencyInjection
 
         public static IServiceCollection AddPresentation(this IServiceCollection services)
         {
-            // ViewModels
+            // ✅ ViewModels - Registrar con Scoped para que se creen nuevas instancias
             services.AddTransient<GroupsPagesViewModel>();
             services.AddTransient<EditGroupsViewModel>();
             services.AddTransient<FilterPagesViewModel>();
             services.AddTransient<AssignUserToGroupsViewModel>();
             services.AddTransient<CredentialsUserPageViewModel>();
             services.AddTransient<MenuNaviguardViewModel>();
-            services.AddTransient<BrowserViewModel>(); 
+            services.AddTransient<BrowserViewModel>();
 
             // Views
             services.AddTransient<MenuMain>();

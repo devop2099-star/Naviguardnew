@@ -10,7 +10,7 @@ using System.Windows;
 
 namespace Naviguard.WPF
 {
-    public partial class App : Application
+    public partial class App : System.Windows.Application
     {
         private readonly IHost _host;
 

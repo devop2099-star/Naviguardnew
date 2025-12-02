@@ -26,15 +26,19 @@ namespace Naviguard.WPF.ViewModels
 
         private async void LoadUserGroupsAsync()
         {
-            if (!UserSession.IsLoggedIn)
-            {
-                Debug.WriteLine("No hay sesión activa");
-                return;
-            }
-
             try
             {
+                // ✅ Validación de sesión
+                if (!UserSession.IsLoggedIn)
+                {
+                    Debug.WriteLine("❌ No hay sesión activa");
+                    MessageBox.Show("No hay una sesión activa. Por favor, inicie sesión.", "Error de Sesión");
+                    return;
+                }
+
                 long userId = UserSession.ApiUserId;
+                Debug.WriteLine($"🔍 Cargando grupos para el usuario ID: {userId}");
+
                 var result = await _assignmentService.GetGroupsByUserIdAsync((int)userId);
 
                 if (result.IsSuccess && result.Value != null)
@@ -50,24 +54,42 @@ namespace Naviguard.WPF.ViewModels
                             Pin = groupDto.Pin
                         });
                     }
+
+                    Debug.WriteLine($"✅ {Grupos.Count} grupos cargados correctamente");
                 }
                 else
                 {
-                    MessageBox.Show(result.Error, "Error");
+                    Debug.WriteLine($"❌ Error al cargar grupos: {result.Error}");
+                    MessageBox.Show(result.Error, "Error al cargar grupos");
                 }
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"❌ Excepción al cargar grupos: {ex.Message}");
+                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
                 MessageBox.Show($"Error al cargar grupos: {ex.Message}", "Error");
             }
         }
 
         [RelayCommand]
-        private void OpenGroup(Group group)
+        private void OpenGroup(Group? group)
         {
-            if (group == null) return;
+            if (group == null)
+            {
+                Debug.WriteLine("❌ El grupo es null");
+                return;
+            }
+
             Debug.WriteLine($"[GroupsPagesViewModel] Abriendo grupo: '{group.GroupName}', ID: {group.GroupId}");
-            NavigateToGroupAction?.Invoke(group);
+
+            if (NavigateToGroupAction == null)
+            {
+                Debug.WriteLine("❌ NavigateToGroupAction es null");
+                MessageBox.Show("No se puede navegar. Contacte al administrador.", "Error");
+                return;
+            }
+
+            NavigateToGroupAction.Invoke(group);
         }
     }
 }

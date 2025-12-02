@@ -1,4 +1,5 @@
-﻿// Naviguard.WPF/Services/UserSession.cs
+﻿using System.Diagnostics;
+
 namespace Naviguard.WPF.Services
 {
     public static class UserSession
@@ -11,7 +12,10 @@ namespace Naviguard.WPF.Services
             get
             {
                 if (!_apiUserId.HasValue)
+                {
+                    Debug.WriteLine("❌ ERROR: No hay sesión activa (ApiUserId es null)");
                     throw new InvalidOperationException("No hay sesión activa (ApiUserId).");
+                }
                 return _apiUserId.Value;
             }
         }
@@ -21,7 +25,10 @@ namespace Naviguard.WPF.Services
             get
             {
                 if (string.IsNullOrEmpty(_userName))
+                {
+                    Debug.WriteLine("❌ ERROR: Nombre de usuario no disponible en la sesión");
                     throw new InvalidOperationException("Nombre de usuario no disponible en la sesión.");
+                }
                 return _userName;
             }
         }
@@ -32,10 +39,12 @@ namespace Naviguard.WPF.Services
         {
             _apiUserId = apiUserId;
             _userName = userName;
+            Debug.WriteLine($"✅ Sesión iniciada - UserID: {apiUserId}, UserName: {userName}");
         }
 
         public static void EndSession()
         {
+            Debug.WriteLine($"🔚 Cerrando sesión - UserID: {_apiUserId}, UserName: {_userName}");
             _apiUserId = null;
             _userName = null;
         }
