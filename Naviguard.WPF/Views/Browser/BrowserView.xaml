@@ -9,7 +9,7 @@
              d:DesignHeight="450" d:DesignWidth="800">
     
     <Grid>
-        <cefSharp:ChromiumWebBrowser x:Name="Browser"/>
+        <cefSharp:ChromiumWebBrowser x:Name="BrowserControl"/>
     </Grid>
     
 </UserControl>

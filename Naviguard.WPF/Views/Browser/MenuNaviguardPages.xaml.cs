@@ -1,7 +1,6 @@
-﻿using Naviguard.Domain.Entities;
-using System.Windows;
+﻿// Naviguard.WPF/Views/Browser/MenuNaviguardPages.xaml.cs
 using System.Windows.Controls;
-using Naviguard.WPF.ViewModels;
+using System.Windows;
 
 namespace Naviguard.WPF.Views.Browser
 {
@@ -12,21 +11,10 @@ namespace Naviguard.WPF.Views.Browser
             InitializeComponent();
         }
 
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems.Count > 0 && e.AddedItems[0] is Pagina selectedPage)
-            {
-                if (DataContext is MenuNaviguardViewModel viewModel)
-                {
-                    viewModel.OpenPageCommand.Execute(selectedPage);
-                }
-            }
-        }
-
-        // ✅ Método que faltaba
         private void OpenPagesMenu_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.ContextMenu != null)
+            var button = sender as Button;
+            if (button?.ContextMenu != null)
             {
                 button.ContextMenu.PlacementTarget = button;
                 button.ContextMenu.IsOpen = true;

@@ -10,6 +10,7 @@ using Naviguard.WPF.Handlers;
 using Naviguard.WPF.Services;
 using System.Diagnostics;
 using System.Windows;
+using WpfApp = System.Windows.Application;
 
 namespace Naviguard.WPF.ViewModels
 {
@@ -62,11 +63,11 @@ namespace Naviguard.WPF.ViewModels
             if (page.RequiresLogin || page.RequiresCustomLogin)
             {
                 var credentials = await GetCredentialsForPageAsync(page);
-                if (credentials.HasValue) // ✅ CORREGIDO
+                if (credentials.HasValue)
                 {
-                    var requestHandler = new CustomRequestHandler( // ✅ CAMBIAR NOMBRE
-                        credentials.Value.Username, // ✅ CORREGIDO
-                        credentials.Value.Password, // ✅ CORREGIDO
+                    var requestHandler = new CustomRequestHandler(
+                        credentials.Value.Username,
+                        credentials.Value.Password,
                         page.RequiresRedirects);
 
                     Browser.RequestHandler = requestHandler;
@@ -88,13 +89,10 @@ namespace Naviguard.WPF.ViewModels
             try
             {
                 var proxyInfo = await _proxyManager.GetProxyAsync();
-                if (proxyInfo != null && proxyInfo.IsValid()) // ✅ Ahora existe el método
+                if (proxyInfo != null && proxyInfo.IsValid())
                 {
-                    var proxyAddress = proxyInfo.GetProxyAddress(); // ✅ Ahora existe el método
+                    var proxyAddress = proxyInfo.GetProxyAddress();
                     Debug.WriteLine($"Configurando proxy: {proxyAddress}");
-
-                    // CefSharp requiere configurar el proxy antes de inicializar
-                    // Esto debería hacerse en la configuración global de CefSettings
                 }
             }
             catch (Exception ex)
@@ -103,7 +101,6 @@ namespace Naviguard.WPF.ViewModels
             }
         }
 
-        // ✅ CORREGIDO - Cambiar el tipo de retorno a tupla nombrada
         private async Task<(string Username, string Password)?> GetCredentialsForPageAsync(Pagina page)
         {
             if (!UserSession.IsLoggedIn) return null;
@@ -112,7 +109,6 @@ namespace Naviguard.WPF.ViewModels
             {
                 if (page.RequiresCustomLogin)
                 {
-                    // Intentar obtener credenciales del usuario
                     var userCredential = await _credentialRepository.GetCredentialAsync(
                         UserSession.ApiUserId,
                         page.PageId);
@@ -124,7 +120,6 @@ namespace Naviguard.WPF.ViewModels
                     }
                 }
 
-                // Si no hay credenciales de usuario o RequiresLogin, usar credenciales de página
                 if (page.RequiresLogin)
                 {
                     var pageCredential = await _pageCredentialRepository.GetCredentialByPageIdAsync(page.PageId);
@@ -148,8 +143,12 @@ namespace Naviguard.WPF.ViewModels
         {
             if (e.NewValue is string newUrl)
             {
-                CurrentUrl = newUrl;
-                UpdateNavigationState();
+                // ✅ Ejecutar en UI thread
+                WpfApp.Current.Dispatcher.Invoke(() =>
+                {
+                    CurrentUrl = newUrl;
+                    UpdateNavigationState();
+                });
             }
         }
 
@@ -157,56 +156,88 @@ namespace Naviguard.WPF.ViewModels
         {
             if (e.NewValue is string newTitle)
             {
-                PageTitle = newTitle;
+                // ✅ Ejecutar en UI thread
+                WpfApp.Current.Dispatcher.Invoke(() =>
+                {
+                    PageTitle = newTitle;
+                });
             }
         }
 
         private void OnLoadingStateChanged(object? sender, LoadingStateChangedEventArgs e)
         {
-            IsLoading = e.IsLoading;
-            UpdateNavigationState();
+            // ✅ Ejecutar en UI thread
+            WpfApp.Current.Dispatcher.Invoke(() =>
+            {
+                IsLoading = e.IsLoading;
+                UpdateNavigationState();
+            });
         }
 
         private void UpdateNavigationState()
         {
             if (Browser != null)
             {
-                CanGoBack = Browser.CanGoBack;
-                CanGoForward = Browser.CanGoForward;
+                // ✅ Ya estamos en el UI thread gracias al Dispatcher
+                try
+                {
+                    CanGoBack = Browser.CanGoBack;
+                    CanGoForward = Browser.CanGoForward;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error al actualizar estado de navegación: {ex.Message}");
+                }
             }
         }
 
         [RelayCommand]
         private void GoBack()
         {
-            if (Browser?.CanGoBack == true)
+            // ✅ Ejecutar en UI thread
+            WpfApp.Current.Dispatcher.Invoke(() =>
             {
-                Browser.Back();
-            }
+                if (Browser?.CanGoBack == true)
+                {
+                    Browser.Back();
+                }
+            });
         }
 
         [RelayCommand]
         private void GoForward()
         {
-            if (Browser?.CanGoForward == true)
+            // ✅ Ejecutar en UI thread
+            WpfApp.Current.Dispatcher.Invoke(() =>
             {
-                Browser.Forward();
-            }
+                if (Browser?.CanGoForward == true)
+                {
+                    Browser.Forward();
+                }
+            });
         }
 
         [RelayCommand]
         private void Refresh()
         {
-            Browser?.Reload();
+            // ✅ Ejecutar en UI thread
+            WpfApp.Current.Dispatcher.Invoke(() =>
+            {
+                Browser?.Reload();
+            });
         }
 
         [RelayCommand]
         private void NavigateToUrl()
         {
-            if (!string.IsNullOrWhiteSpace(CurrentUrl))
+            // ✅ Ejecutar en UI thread
+            WpfApp.Current.Dispatcher.Invoke(() =>
             {
-                Browser?.Load(CurrentUrl);
-            }
+                if (!string.IsNullOrWhiteSpace(CurrentUrl))
+                {
+                    Browser?.Load(CurrentUrl);
+                }
+            });
         }
 
         public void Cleanup()

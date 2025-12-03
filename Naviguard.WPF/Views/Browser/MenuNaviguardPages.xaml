@@ -14,6 +14,31 @@
         <SolidColorBrush x:Key="TopBarBackgroundBrush" Color="#D91E1E1E"/>
         <DropShadowEffect x:Key="ShadowEffect" Color="#000000" Direction="270" ShadowDepth="2" BlurRadius="10" Opacity="0.15"/>
 
+        <!-- ✅ AGREGAR: Geometría Cancel -->
+        <PathGeometry x:Key="Cancel" Figures="M 19,6.41 17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12 Z"/>
+
+        <!-- ✅ AGREGAR: Geometría Menu -->
+        <PathGeometry x:Key="Menu" Figures="M3,6 H21 V8 H3 Z M3,11 H21 V13 H3 Z M3,16 H21 V18 H3 Z"/>
+
+        <!-- ✅ AGREGAR: Estilo IconButtonStyle2 -->
+        <Style x:Key="IconButtonStyle2" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
             <Setter Property="Foreground" Value="#A0AEC0"/>
             <Setter Property="Template">
@@ -118,6 +143,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- Barra de pestañas -->
             <Grid Grid.Row="0">
                 <Grid x:Name="MenuContainerGrid" VerticalAlignment="Top" Height="60">
                     <Border x:Name="TopMenu" Background="#1e1e1e" CornerRadius="21" Height="42" Margin="15,10,15,8" VerticalAlignment="Top" Effect="{StaticResource ShadowEffect}" Panel.ZIndex="99">
@@ -127,60 +153,56 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TabControl Grid.Column="0" ItemsSource="{Binding PestañasAbiertas}" SelectedItem="{Binding PestañaSeleccionada}">
+                            <!-- ✅ SIMPLIFICAR: TabControl con binding correcto -->
+                            <TabControl Grid.Column="0" 
+                                       ItemsSource="{Binding OpenTabs}" 
+                                       SelectedItem="{Binding SelectedTab, Mode=TwoWay}">
                                 <TabControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <TextBlock Grid.Column="0" 
-                                                       Text="{Binding page_name}" 
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding PageName}" 
                                                        VerticalAlignment="Center" 
                                                        TextTrimming="CharacterEllipsis"
-                                                       ToolTip="{Binding page_name}"/>
+                                                       MaxWidth="150"
+                                                       ToolTip="{Binding PageName}"/>
 
-                                            <Button Grid.Column="1"
-                                                    Background="Transparent" 
+                                            <Button Background="Transparent" 
                                                     BorderThickness="0" 
                                                     Cursor="Hand" 
                                                     Margin="8,0,0,0"
-                                                    Command="{Binding DataContext.CerrarPestañaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Path Data="{StaticResource Cancel}" 
                                                       Fill="#AAAAAA"
-                                                      Width="10" Height="10" Stretch="Uniform"/>
-                                                <Button.Style>
-                                                    <Style TargetType="Button">
-                                                        <Style.Triggers>
-                                                            <Trigger Property="IsMouseOver" Value="True">
-                                                                <Setter Property="Opacity" Value="0.7"/>
-                                                            </Trigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Button.Style>
+                                                      Width="10" Height="10" 
+                                                      Stretch="Uniform"/>
                                             </Button>
-                                        </Grid>
+                                        </StackPanel>
                                     </DataTemplate>
                                 </TabControl.ItemTemplate>
                             </TabControl>
 
+                            <!-- Botón de menú -->
                             <Button Grid.Column="1"
+                                    x:Name="btnOpenPagesMenu"
                                     Click="OpenPagesMenu_Click"
-                                    Style="{StaticResource IconButtonStyle2}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
                                     Margin="0,0,15,0"
                                     Width="40" Height="40">
                                 <Path Data="{StaticResource Menu}"
-                                      Fill="White" Width="20" Height="20" Stretch="Uniform"/>
+                                      Fill="White" 
+                                      Width="20" Height="20" 
+                                      Stretch="Uniform"/>
+
                                 <Button.ContextMenu>
-                                    <ContextMenu ItemsSource="{Binding PaginasDelGrupo}" 
+                                    <ContextMenu ItemsSource="{Binding Pages}" 
                                                  Style="{StaticResource ModernContextMenuStyle}">
                                         <ContextMenu.ItemContainerStyle>
                                             <Style TargetType="MenuItem" BasedOn="{StaticResource ModernContextMenuItemStyle}">
-                                                <Setter Property="Header" Value="{Binding page_name}"/>
-                                                <Setter Property="Command" Value="{Binding DataContext.AbrirPaginaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                <Setter Property="Header" Value="{Binding PageName}"/>
+                                                <Setter Property="Command" Value="{Binding DataContext.OpenPageCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                                 <Setter Property="CommandParameter" Value="{Binding}"/>
                                             </Style>
                                         </ContextMenu.ItemContainerStyle>
@@ -192,7 +214,13 @@
                 </Grid>
             </Grid>
 
-            <Border x:Name="MainContentArea" Grid.Row="1" Background="#FFFFFF" Margin="20,0,20,20" CornerRadius="15" Effect="{StaticResource ShadowEffect}">
+            <!-- Área del navegador -->
+            <Border x:Name="MainContentArea" 
+                    Grid.Row="1" 
+                    Background="#FFFFFF" 
+                    Margin="20,0,20,20" 
+                    CornerRadius="15" 
+                    Effect="{StaticResource ShadowEffect}">
                 <Border.Clip>
                     <RectangleGeometry RadiusX="15" RadiusY="15">
                         <RectangleGeometry.Rect>
@@ -203,9 +231,12 @@
                         </RectangleGeometry.Rect>
                     </RectangleGeometry>
                 </Border.Clip>
-                <ContentControl Content="{Binding CurrentBrowserView}"/>
+
+                <!-- ✅ CRÍTICO: ContentControl que muestra el navegador -->
+                <ContentControl Content="{Binding CurrentBrowserView}"
+                               HorizontalContentAlignment="Stretch"
+                               VerticalContentAlignment="Stretch"/>
             </Border>
         </Grid>
     </Border>
-
 </UserControl>

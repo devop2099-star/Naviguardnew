@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿// Naviguard.WPF/Views/MenuMain.xaml.cs
+using Microsoft.Extensions.DependencyInjection;
 using Naviguard.Domain.Entities;
 using Naviguard.WPF.Services;
 using Naviguard.WPF.ViewModels;
@@ -18,6 +19,7 @@ namespace Naviguard.WPF.Views
         private readonly IServiceProvider _serviceProvider;
         private readonly NavigationService _navigationService;
         private bool _hasAdminAccess;
+        private MenuNaviguardViewModel? _currentMenuViewModel; // ✅ AGREGAR
 
         public MenuMain(IServiceProvider serviceProvider, NavigationService navigationService)
         {
@@ -38,8 +40,7 @@ namespace Naviguard.WPF.Views
             btnEditGroups.Visibility = adminVisibility;
             btnAssignUserToGroups.Visibility = adminVisibility;
 
-            // ✅ Corregido - usar objeto anónimo en lugar de null
-            btnNav_Click(this, new RoutedEventArgs());
+            btnNav_Click(null, null);
         }
 
         private void MainBorder_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -56,39 +57,15 @@ namespace Naviguard.WPF.Views
 
         private void btnNav_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                Debug.WriteLine("🔄 Navegando a vista de grupos...");
+            _currentMenuViewModel = null; // ✅ Limpiar referencia
 
-                var groupsViewModel = _serviceProvider.GetRequiredService<GroupsPagesViewModel>();
+            var groupsViewModel = _serviceProvider.GetRequiredService<GroupsPagesViewModel>();
+            groupsViewModel.NavigateToGroupAction = NavigateToGroupView;
 
-                if (groupsViewModel == null)
-                {
-                    MessageBox.Show("No se pudo cargar el ViewModel de grupos", "Error");
-                    return;
-                }
+            var groupsView = _serviceProvider.GetRequiredService<GroupsPages>();
+            groupsView.DataContext = groupsViewModel;
 
-                groupsViewModel.NavigateToGroupAction = NavigateToGroupView;
-
-                var groupsView = _serviceProvider.GetRequiredService<GroupsPages>();
-
-                if (groupsView == null)
-                {
-                    MessageBox.Show("No se pudo cargar la vista de grupos", "Error");
-                    return;
-                }
-
-                groupsView.DataContext = groupsViewModel;
-                _navigationService.NavigateTo(groupsView);
-
-                Debug.WriteLine("✅ Vista de grupos cargada correctamente");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"❌ Error en btnNav_Click: {ex.Message}");
-                Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
-                MessageBox.Show($"Error al cargar grupos: {ex.Message}", "Error");
-            }
+            _navigationService.NavigateTo(groupsView);
         }
 
         public void NavigateToGroupView(Group group)
@@ -98,6 +75,7 @@ namespace Naviguard.WPF.Views
                 group.GroupId);
 
             menuViewModel.OpenPageAction = OpenPageInBrowser;
+            _currentMenuViewModel = menuViewModel; // ✅ Guardar referencia
 
             var menuView = new MenuNaviguardPages
             {
@@ -107,6 +85,7 @@ namespace Naviguard.WPF.Views
             _navigationService.NavigateTo(menuView);
         }
 
+        // ✅ ACTUALIZADO - Registrar vista en el ViewModel
         private async void OpenPageInBrowser(Pagina page)
         {
             try
@@ -116,9 +95,13 @@ namespace Naviguard.WPF.Views
                 var browserViewModel = _serviceProvider.GetRequiredService<BrowserViewModel>();
                 var browserView = new BrowserView();
 
-                _navigationService.NavigateTo(browserView);
-
+                // Inicializar el navegador
                 await browserView.InitializeAsync(browserViewModel, page);
+
+                // Registrar la vista en el ViewModel del menú
+                _currentMenuViewModel?.RegisterBrowserView(page, browserView);
+
+                Debug.WriteLine("Vista del navegador registrada correctamente");
             }
             catch (Exception ex)
             {
@@ -129,6 +112,8 @@ namespace Naviguard.WPF.Views
 
         private void btnFilterPages_Click(object sender, RoutedEventArgs e)
         {
+            _currentMenuViewModel = null; // ✅ Limpiar referencia
+
             var viewModel = _serviceProvider.GetRequiredService<FilterPagesViewModel>();
             var view = _serviceProvider.GetRequiredService<FilterPagesNav>();
             view.DataContext = viewModel;
@@ -137,6 +122,8 @@ namespace Naviguard.WPF.Views
 
         private void btnEditGroups_Click(object sender, RoutedEventArgs e)
         {
+            _currentMenuViewModel = null; // ✅ Limpiar referencia
+
             var viewModel = _serviceProvider.GetRequiredService<EditGroupsViewModel>();
             var view = _serviceProvider.GetRequiredService<EditGroups>();
             view.DataContext = viewModel;
@@ -145,6 +132,8 @@ namespace Naviguard.WPF.Views
 
         private void btnAssignUserToGroups_Click(object sender, RoutedEventArgs e)
         {
+            _currentMenuViewModel = null; // ✅ Limpiar referencia
+
             var viewModel = _serviceProvider.GetRequiredService<AssignUserToGroupsViewModel>();
             var view = _serviceProvider.GetRequiredService<AssignUserToGroups>();
             view.DataContext = viewModel;
