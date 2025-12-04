@@ -10,10 +10,6 @@
              d:DesignHeight="600" d:DesignWidth="900"
              Background="White">
 
-    <UserControl.DataContext>
-        <vm:EditGroupsViewModel/>
-    </UserControl.DataContext>
-
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:BooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter" Invert="True"/>
@@ -37,7 +33,7 @@
                 <Grid Visibility="{Binding IsEditingPages, Converter={StaticResource InvertedBooleanToVisibilityConverter}}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Top" Text="Grupos Existentes" FontSize="18" FontWeight="Bold" Foreground="#1C1E21" Margin="0,5,0,10"/>
-                        <TextBox DockPanel.Dock="Top" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="Buscar grupo..." Style="{StaticResource RoundedTextBoxStyle}" Padding="5" Margin="0,0,0,10"/>
+                        <TextBox DockPanel.Dock="Top" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Tag="Buscar grupo..." Style="{StaticResource RoundedTextBoxStyle}" Padding="5" Margin="0,0,0,10" Width="299"/>
 
                         <ListBox x:Name="GroupsListBox" ItemsSource="{Binding FilteredGroups}" SelectedItem="{Binding SelectedGroup}" BorderThickness="0" HorizontalContentAlignment="Stretch">
                             <ListBox.ItemTemplate>

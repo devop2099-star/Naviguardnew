@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Naviguard.WPF.ViewModels;
+﻿using Naviguard.WPF.ViewModels;
 using System.Windows.Controls;
 
 namespace Naviguard.WPF.Views.Users

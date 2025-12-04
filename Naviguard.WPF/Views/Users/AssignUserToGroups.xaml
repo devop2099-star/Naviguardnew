@@ -9,10 +9,6 @@
              d:DesignHeight="600" d:DesignWidth="900"
              Background="Transparent">
 
-    <UserControl.DataContext>
-        <vm:AssignUserToGroupsViewModel/>
-    </UserControl.DataContext>
-
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
