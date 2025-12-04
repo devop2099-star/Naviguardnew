@@ -82,8 +82,8 @@ namespace Naviguard.WPF.ViewModels
                         {
                             PageId = pageDto.PageId,
                             PageName = pageDto.PageName,
-                            Url = pageDto.Url,
-                            Description = pageDto.Description,
+                            Url = pageDto.Url, //2
+                            Description = pageDto.Description,  //1
                             RequiresProxy = pageDto.RequiresProxy,
                             RequiresLogin = pageDto.RequiresLogin,
                             RequiresCustomLogin = pageDto.RequiresCustomLogin,
