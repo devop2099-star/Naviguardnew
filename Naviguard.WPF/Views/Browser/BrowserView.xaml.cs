@@ -15,6 +15,7 @@ namespace Naviguard.WPF.Views.Browser
         private Pagina? _currentPage;
         private (string Username, string Password)? _loginCredentials;
         private bool _isAutoLoginRunning = false;
+        private bool _loginExecuted = false; // ✅ Evitar múltiples ejecuciones
 
         public BrowserView()
         {
@@ -34,15 +35,16 @@ namespace Naviguard.WPF.Views.Browser
             {
                 Debug.WriteLine($"[BrowserView] ChromiumWebBrowser encontrado, inicializando...");
 
-                // ✅ Suscribirse al evento FrameLoadEnd para auto-login
+                // ✅ Suscribirse a eventos
                 browser.FrameLoadEnd += Browser_FrameLoadEnd;
+                browser.LoadError += Browser_LoadError; // ✅ NUEVO: Detectar errores
 
-                // ✅ Cargar credenciales ANTES de inicializar el navegador
+                // ✅ Cargar credenciales
                 _loginCredentials = await viewModel.GetCredentialsForPageAsync(page);
 
                 Debug.WriteLine($"[BrowserView] ¿Credenciales listas para usar? -> {(_loginCredentials.HasValue ? "Sí" : "No")}");
 
-                // Ahora inicializar el navegador
+                // Inicializar el navegador
                 await viewModel.InitializeBrowserAsync(browser, page);
             }
             else
@@ -51,86 +53,156 @@ namespace Naviguard.WPF.Views.Browser
             }
         }
 
-        // ✅ NUEVO: Evento para auto-login
+        // ✅ NUEVO: Detectar errores de carga
+        private void Browser_LoadError(object? sender, LoadErrorEventArgs e)
+        {
+            if (e.ErrorCode == CefErrorCode.Aborted)
+            {
+                Debug.WriteLine($"[BrowserView] ⚠️ Navegación abortada (normal después de login): {e.FailedUrl}");
+                return; // Esto es normal después de hacer clic en login
+            }
+
+            Debug.WriteLine($"[BrowserView] ❌ Error de carga: {e.ErrorText} ({e.ErrorCode}) en {e.FailedUrl}");
+        }
+
         private void Browser_FrameLoadEnd(object? sender, FrameLoadEndEventArgs e)
         {
-            if (e.Frame.IsMain)
-            {
-                Debug.WriteLine($"[BrowserView] FrameLoadEnd para: {e.Url}. ¿Hay credenciales?: {(_loginCredentials.HasValue ? "Sí" : "No")}");
+            if (!e.Frame.IsMain) return;
 
-                if (_loginCredentials != null && !_isAutoLoginRunning)
+            Debug.WriteLine($"[BrowserView] FrameLoadEnd para: {e.Url}. ¿Hay credenciales?: {(_loginCredentials.HasValue ? "Sí" : "No")}");
+
+            // ✅ Solo ejecutar si hay credenciales, no se ha ejecutado y estamos en la página de login
+            if (_loginCredentials.HasValue &&
+                !_isAutoLoginRunning &&
+                !_loginExecuted &&
+                e.Url.Contains("login.php")) // ✅ Verificar que estamos en la página de login
+            {
+                _isAutoLoginRunning = true;
+                Debug.WriteLine("[BrowserView] Ejecutando AutoLogin...");
+
+                Dispatcher.InvokeAsync(async () =>
                 {
-                    _isAutoLoginRunning = true;
-                    Debug.WriteLine("[BrowserView] Ejecutando AutoLogin...");
-                    ExecuteAutoLogin();
-                }
+                    await Task.Delay(1500); // ✅ Aumentar delay a 1.5 segundos
+                    await ExecuteAutoLoginAsync();
+                }, System.Windows.Threading.DispatcherPriority.Background);
             }
         }
 
-        // ✅ NUEVO: Ejecutar auto-login
-        private async void ExecuteAutoLogin()
+        private async Task ExecuteAutoLoginAsync()
         {
-            if (!_loginCredentials.HasValue || BrowserControl == null) return;
-
-            try
-            {
-                Debug.WriteLine($"[BrowserView] 💉 Inyectando login con Usuario: '{_loginCredentials.Value.Username}'");
-
-                string script = $@"
-                    (function() {{
-                        try {{
-                            var emailField = document.getElementById('txtemail');
-                            var passwordField = document.getElementById('txtpas');
-                            var characField = document.getElementById('txtcarac');
-                            var codcaracField = document.getElementById('txtcodcarac');
-                            var loginButton = document.querySelector('.btn_access');
-
-                            if (emailField && passwordField && characField && codcaracField && loginButton) {{
-                                emailField.value = '{_loginCredentials.Value.Username}';
-                                passwordField.value = '{_loginCredentials.Value.Password}';
-                                characField.value = codcaracField.value;
-                                loginButton.click();
-                                return 'Login ejecutado correctamente';
-                            }} else {{
-                                return 'Elementos del formulario no encontrados';
-                            }}
-                        }} catch(e) {{
-                            return 'Error: ' + e.message;
-                        }}
-                    }})();
-                ";
-
-                Debug.WriteLine($"[BrowserView] 📋 Ejecutando script JS...");
-
-                var response = await BrowserControl.GetMainFrame().EvaluateScriptAsync(script);
-
-                if (response.Success)
-                {
-                    Debug.WriteLine($"[BrowserView] ✅ Script ejecutado: {response.Result}");
-                }
-                else
-                {
-                    Debug.WriteLine($"[BrowserView] ❌ Error en script: {response.Message}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[BrowserView] 💥 Error en ExecuteAutoLogin: {ex.Message}");
-            }
-            finally
+            if (!_loginCredentials.HasValue || BrowserControl == null)
             {
                 _isAutoLoginRunning = false;
+                return;
             }
+
+            int maxAttempts = 3;
+            int currentAttempt = 0;
+
+            while (currentAttempt < maxAttempts)
+            {
+                currentAttempt++;
+
+                try
+                {
+                    await Task.Delay(500 * currentAttempt);
+
+                    if (!BrowserControl.IsBrowserInitialized)
+                    {
+                        Debug.WriteLine($"[BrowserView] Intento {currentAttempt}/{maxAttempts}: Navegador no listo");
+                        continue;
+                    }
+
+                    Debug.WriteLine($"[BrowserView] Intento {currentAttempt}/{maxAttempts}: Ejecutando auto-login...");
+
+                    string username = _loginCredentials.Value.Username.Replace("'", "\\'");
+                    string password = _loginCredentials.Value.Password.Replace("'", "\\'");
+
+                    // ✅ Script mejorado con validaciones
+                    string script = $@"
+                        (function() {{
+                            try {{
+                                console.log('🔄 [Auto-Login] Iniciando...');
+                                
+                                var email = document.getElementById('txtemail');
+                                var pass = document.getElementById('txtpas');
+                                var carac = document.getElementById('txtcarac');
+                                var codcarac = document.getElementById('txtcodcarac');
+                                var btn = document.querySelector('.btn_access');
+                                
+                                if (!email || !pass || !carac || !codcarac || !btn) {{
+                                    console.error('❌ [Auto-Login] Elementos no encontrados');
+                                    return false;
+                                }}
+
+                                // Llenar campos
+                                email.value = '{username}';
+                                pass.value = '{password}';
+                                carac.value = codcarac.value;
+                                
+                                console.log('✅ [Auto-Login] Campos llenados');
+                                
+                                // ✅ Disparar eventos de cambio (algunos formularios lo requieren)
+                                email.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                pass.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                carac.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                
+                                // Hacer clic después de un delay
+                                setTimeout(function() {{
+                                    btn.click();
+                                    console.log('✅ [Auto-Login] Click ejecutado');
+                                }}, 200);
+                                
+                                return true;
+                            }} catch(e) {{
+                                console.error('💥 [Auto-Login] Error:', e);
+                                return false;
+                            }}
+                        }})();
+                    ";
+
+                    var frame = BrowserControl.GetMainFrame();
+                    if (frame == null)
+                    {
+                        Debug.WriteLine($"[BrowserView] Intento {currentAttempt}/{maxAttempts}: Frame no disponible");
+                        continue;
+                    }
+
+                    var response = await frame.EvaluateScriptAsync(script);
+
+                    if (response.Success && response.Result is bool result && result)
+                    {
+                        Debug.WriteLine($"[BrowserView] ✅ Auto-login exitoso en intento {currentAttempt}");
+                        _loginExecuted = true; // ✅ Marcar como ejecutado
+                        break;
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[BrowserView] ⚠️ Intento {currentAttempt} falló, reintentando...");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"[BrowserView] ❌ Error en intento {currentAttempt}: {ex.Message}");
+
+                    if (currentAttempt >= maxAttempts)
+                    {
+                        Debug.WriteLine($"[BrowserView] 💥 Todos los intentos fallaron");
+                    }
+                }
+            }
+
+            _isAutoLoginRunning = false;
         }
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
             Debug.WriteLine("[BrowserView] Unloaded event");
 
-            // ✅ Desuscribirse del evento
             if (BrowserControl != null)
             {
                 BrowserControl.FrameLoadEnd -= Browser_FrameLoadEnd;
+                BrowserControl.LoadError -= Browser_LoadError;
             }
 
             _viewModel?.Cleanup();

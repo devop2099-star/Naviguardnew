@@ -4,12 +4,12 @@ using System.Diagnostics;
 
 namespace Naviguard.WPF.Handlers
 {
-    // ✅ CAMBIAR EL NOMBRE DE LA CLASE para evitar conflicto
     public class CustomRequestHandler : CefSharp.Handler.RequestHandler
     {
         private readonly string _username;
         private readonly string _password;
         private readonly bool _handleRedirects;
+        private bool _credentialsInjected = false;
 
         public CustomRequestHandler(string username, string password, bool handleRedirects = false)
         {
@@ -28,7 +28,14 @@ namespace Naviguard.WPF.Handlers
             string requestInitiator,
             ref bool disableDefaultHandling)
         {
-            return new CustomResourceRequestHandler(_username, _password);
+            // Solo inyectar credenciales en la primera navegación
+            if (!_credentialsInjected && isNavigation && frame.IsMain)
+            {
+                _credentialsInjected = true;
+                return new CustomResourceRequestHandler(_username, _password);
+            }
+
+            return null;
         }
 
         protected override bool OnBeforeBrowse(
@@ -39,12 +46,24 @@ namespace Naviguard.WPF.Handlers
             bool userGesture,
             bool isRedirect)
         {
-            if (_handleRedirects && isRedirect)
+            if (isRedirect)
             {
-                Debug.WriteLine($"Redireccionando a: {request.Url}");
+                Debug.WriteLine($"[CustomRequestHandler] Redireccionando a: {request.Url}");
             }
 
-            return false; // false = permitir navegación
+            return false; // Permitir navegación
+        }
+
+        // ✅ CORREGIDO: Firma correcta con todos los parámetros
+        protected override void OnRenderProcessTerminated(
+            IWebBrowser chromiumWebBrowser,
+            IBrowser browser,
+            CefTerminationStatus status,
+            int errorCode,
+            string errorString)
+        {
+            Debug.WriteLine($"[CustomRequestHandler] ⚠️ Proceso de renderizado terminado: {status}, ErrorCode: {errorCode}, Error: {errorString}");
+            base.OnRenderProcessTerminated(chromiumWebBrowser, browser, status, errorCode, errorString);
         }
     }
 
@@ -66,8 +85,10 @@ namespace Naviguard.WPF.Handlers
             IRequest request,
             IRequestCallback callback)
         {
-            // Inyectar credenciales en las cabeceras (para autenticación básica)
-            if (!string.IsNullOrWhiteSpace(_username))
+            // Solo inyectar en el request principal (HTML), no en recursos (CSS, JS, imágenes)
+            if (!string.IsNullOrWhiteSpace(_username) &&
+                frame.IsMain &&
+                request.ResourceType == ResourceType.MainFrame)
             {
                 var headers = request.Headers;
                 var authValue = Convert.ToBase64String(

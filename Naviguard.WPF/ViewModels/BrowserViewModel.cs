@@ -59,7 +59,7 @@ namespace Naviguard.WPF.ViewModels
             }
 
             // Configurar RequestHandler para inyectar credenciales
-            if (page.RequiresLogin || page.RequiresCustomLogin)
+            if (page.RequiresProxy)
             {
                 var credentials = await GetCredentialsForPageAsync(page);
                 if (credentials.HasValue)
@@ -72,11 +72,17 @@ namespace Naviguard.WPF.ViewModels
                     Browser.RequestHandler = requestHandler;
                 }
             }
+            else
+            {
+                Browser.RequestHandler = null;
+            }
 
             // Suscribirse a eventos
             Browser.AddressChanged += OnAddressChanged;
             Browser.TitleChanged += OnTitleChanged;
             Browser.LoadingStateChanged += OnLoadingStateChanged;
+
+            Browser.RenderProcessMessageHandler = null;
 
             // Navegar a la URL
             Browser.Load(page.Url);
