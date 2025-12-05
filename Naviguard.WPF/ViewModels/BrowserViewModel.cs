@@ -1,4 +1,5 @@
-﻿using CefSharp;
+﻿// Naviguard.WPF/ViewModels/BrowserViewModel.cs
+using CefSharp;
 using CefSharp.Wpf;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -52,13 +53,17 @@ namespace Naviguard.WPF.ViewModels
             Browser = browser;
             _currentPage = page;
 
+            // ✅ CRÍTICO: Configurar LifeSpanHandler ANTES de cualquier otra cosa
+            Browser.LifeSpanHandler = new CustomLifeSpanHandler();
+            Debug.WriteLine("[BrowserViewModel] LifeSpanHandler configurado");
+
             // Configurar proxy si es necesario
             if (page.RequiresProxy)
             {
                 await ConfigureProxyAsync();
             }
 
-            // Configurar RequestHandler para inyectar credenciales
+            // NO usar RequestHandler para auto-login (se hace solo con JavaScript)
             if (page.RequiresProxy)
             {
                 var credentials = await GetCredentialsForPageAsync(page);
@@ -72,17 +77,11 @@ namespace Naviguard.WPF.ViewModels
                     Browser.RequestHandler = requestHandler;
                 }
             }
-            else
-            {
-                Browser.RequestHandler = null;
-            }
 
             // Suscribirse a eventos
             Browser.AddressChanged += OnAddressChanged;
             Browser.TitleChanged += OnTitleChanged;
             Browser.LoadingStateChanged += OnLoadingStateChanged;
-
-            Browser.RenderProcessMessageHandler = null;
 
             // Navegar a la URL
             Browser.Load(page.Url);
@@ -106,14 +105,12 @@ namespace Naviguard.WPF.ViewModels
             }
         }
 
-        // ✅ HACER PÚBLICO para que BrowserView pueda llamarlo
         public async Task<(string Username, string Password)?> GetCredentialsForPageAsync(Pagina page)
         {
             if (!UserSession.IsLoggedIn) return null;
 
             try
             {
-                // Prioridad 1: Credenciales personalizadas del usuario
                 if (page.RequiresCustomLogin)
                 {
                     Debug.WriteLine($"[BrowserViewModel] 🔎 Buscando credencial PERSONALIZADA para User: {UserSession.ApiUserId}, Page: {page.PageId}");
@@ -133,7 +130,6 @@ namespace Naviguard.WPF.ViewModels
                     }
                 }
 
-                // Prioridad 2: Credenciales generales de la página
                 if (page.RequiresLogin)
                 {
                     Debug.WriteLine($"[BrowserViewModel] 🔎 Buscando credencial GENERAL para Page: {page.PageId}");
