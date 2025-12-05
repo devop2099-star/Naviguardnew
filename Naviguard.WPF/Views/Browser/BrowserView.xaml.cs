@@ -37,8 +37,14 @@ namespace Naviguard.WPF.Views.Browser
 
         private void UserControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine("[BrowserView] Unloaded event");
+            Debug.WriteLine("[BrowserView] Unloaded event - limpiando...");
+
+            // ✅ Limpiar ANTES de liberar el browser
             _viewModel?.Cleanup();
+
+            // ✅ Esperar un momento antes de continuar
+            Task.Delay(100).Wait();
         }
+
     }
 }
