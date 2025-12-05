@@ -5,9 +5,6 @@ using System.Windows.Media.Animation;
 
 namespace Naviguard.WPF.Controls
 {
-    /// <summary>
-    /// Lógica de interacción para TopBarControl.xaml
-    /// </summary>
     public partial class TopBarControl : UserControl
     {
         public TopBarControl()
