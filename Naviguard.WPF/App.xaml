@@ -16,6 +16,8 @@
             <converters:BooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter" Invert="True"/>
             <converters:InverseBooleanConverter x:Key="InverseBoolConverter"/>
             <converters:SizeToRectConverter x:Key="SizeToRectConverter"/>
+            <converters:NullToBooleanConverter x:Key="NullToBooleanConverter"/>
+
 
         </ResourceDictionary>
 

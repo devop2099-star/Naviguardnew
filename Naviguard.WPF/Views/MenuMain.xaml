@@ -11,16 +11,17 @@
         FontSize="15"
         Height="691" Width="1020"
         MinWidth="1020" MinHeight="691"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
         Title="Nx Sphere" 
         WindowStyle="None"
         WindowStartupLocation="CenterScreen">
-    
+
     <Border x:Name="MainBorder"
         CornerRadius="30"
         Background="White"
         SnapsToDevicePixels="True"
-        Padding="0">
+        Padding="0"
+        MouseLeftButtonDown="MainBorder_MouseLeftButtonDown">
 
         <Grid>
             <Grid.RowDefinitions>

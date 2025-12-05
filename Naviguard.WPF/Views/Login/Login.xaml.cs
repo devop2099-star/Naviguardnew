@@ -6,6 +6,7 @@ using WpfApp = System.Windows.Application;
 using System.Windows.Input;
 using System.Windows.Media;
 using Naviguard.Domain.Interfaces;
+using System.Diagnostics;
 
 namespace Naviguard.WPF.Views.Login
 {
@@ -88,10 +89,18 @@ namespace Naviguard.WPF.Views.Login
 
                     bool userHasAdminAccess = await _authRepository.UserHasRolesAsync(loginResult.UserId);
 
+                    // ✅ DESUSCRIBIR el evento Closed antes de cerrar la ventana
+                    if (this.Tag is EventHandler closedHandler)
+                    {
+                        this.Closed -= closedHandler;
+                        Debug.WriteLine("✅ Evento Closed desuscrito - Login exitoso");
+                    }
+
                     var menu = App.GetService<MenuMain>();
                     menu.SetAdminAccess(userHasAdminAccess);
                     menu.Show();
-                    this.Close();
+
+                    this.Close(); // ✅ Ahora Close() NO disparará Shutdown()
                 }
                 catch (Exception ex)
                 {
@@ -110,6 +119,7 @@ namespace Naviguard.WPF.Views.Login
 
         private void btnClose_Click(object sender, RoutedEventArgs e)
         {
+            // ✅ Si cierran la ventana con la X, entonces SÍ cerrar la aplicación
             WpfApp.Current.Shutdown();
         }
     }

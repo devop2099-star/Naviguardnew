@@ -5,8 +5,9 @@ using Naviguard.Application.DTOs;
 using Naviguard.Application.Interfaces;
 using Naviguard.Domain.Entities;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
-using DomainGroup = Naviguard.Domain.Entities.Group; // ✅ AGREGAR ALIAS
 
 namespace Naviguard.WPF.ViewModels
 {
@@ -15,23 +16,15 @@ namespace Naviguard.WPF.ViewModels
         private readonly IPageService _pageService;
         private readonly IGroupService _groupService;
 
-        [ObservableProperty]
-        private ObservableCollection<Pagina> _pages = new();
-
-        [ObservableProperty]
-        private ObservableCollection<DomainGroup> _groups = new(); // ✅ USAR ALIAS
-
-        [ObservableProperty]
-        private Pagina? _selectedPage;
-
+        // ✅ Propiedades de Página (que faltaban)
         [ObservableProperty]
         private string _pageName = string.Empty;
 
         [ObservableProperty]
-        private string _url = string.Empty;
+        private string _pageDescription = string.Empty;
 
         [ObservableProperty]
-        private string _description = string.Empty;
+        private string _pageUrl = string.Empty;
 
         [ObservableProperty]
         private bool _requiresProxy;
@@ -51,23 +44,27 @@ namespace Naviguard.WPF.ViewModels
         [ObservableProperty]
         private string _credentialPassword = string.Empty;
 
+        // ✅ Propiedades de Grupo (que faltaban)
         [ObservableProperty]
-        private List<DomainGroup> _selectedGroups = new(); // ✅ USAR ALIAS
+        private string _groupName = string.Empty;
 
+        [ObservableProperty]
+        private string _groupDescription = string.Empty;
+
+        // ✅ Colecciones
+        [ObservableProperty]
+        private ObservableCollection<PageListItemViewModel> _availablePages = new();
+
+        // ✅ CONSTRUCTOR
         public FilterPagesViewModel(IPageService pageService, IGroupService groupService)
         {
             _pageService = pageService;
             _groupService = groupService;
-            LoadDataAsync();
+            LoadAvailablePagesAsync();
         }
 
-        private async void LoadDataAsync()
-        {
-            await LoadPagesAsync();
-            await LoadGroupsAsync();
-        }
-
-        private async Task LoadPagesAsync()
+        // ✅ MÉTODO PARA CARGAR PÁGINAS
+        private async void LoadAvailablePagesAsync()
         {
             try
             {
@@ -75,86 +72,49 @@ namespace Naviguard.WPF.ViewModels
 
                 if (result.IsSuccess && result.Value != null)
                 {
-                    Pages.Clear();
+                    AvailablePages.Clear();
                     foreach (var pageDto in result.Value)
                     {
-                        Pages.Add(new Pagina
-                        {
-                            PageId = pageDto.PageId,
-                            PageName = pageDto.PageName,
-                            Url = pageDto.Url, //2
-                            Description = pageDto.Description,  //1
-                            RequiresProxy = pageDto.RequiresProxy,
-                            RequiresLogin = pageDto.RequiresLogin,
-                            RequiresCustomLogin = pageDto.RequiresCustomLogin,
-                            RequiresRedirects = pageDto.RequiresRedirects
-                        });
+                        AvailablePages.Add(new PageListItemViewModel(
+                            new Pagina
+                            {
+                                PageId = pageDto.PageId,
+                                PageName = pageDto.PageName,
+                                Description = pageDto.Description,
+                                Url = pageDto.Url
+                            }
+                        ));
                     }
+                    Debug.WriteLine($"✅ {AvailablePages.Count} páginas cargadas");
                 }
             }
             catch (Exception ex)
             {
+                Debug.WriteLine($"❌ Error al cargar páginas: {ex.Message}");
                 MessageBox.Show($"Error al cargar páginas: {ex.Message}", "Error");
             }
         }
 
-        private async Task LoadGroupsAsync()
-        {
-            try
-            {
-                var result = await _groupService.GetAllGroupsAsync();
-
-                if (result.IsSuccess && result.Value != null)
-                {
-                    Groups.Clear();
-                    foreach (var groupDto in result.Value)
-                    {
-                        Groups.Add(new DomainGroup // ✅ USAR ALIAS
-                        {
-                            GroupId = groupDto.GroupId,
-                            GroupName = groupDto.GroupName,
-                            Description = groupDto.Description
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al cargar grupos: {ex.Message}", "Error");
-            }
-        }
-
-        partial void OnSelectedPageChanged(Pagina? value)
-        {
-            if (value != null)
-            {
-                LoadPageDetails(value);
-            }
-        }
-
-        private void LoadPageDetails(Pagina page)
-        {
-            PageName = page.PageName;
-            Url = page.Url;
-            Description = page.Description ?? string.Empty;
-            RequiresProxy = page.RequiresProxy;
-            RequiresLogin = page.RequiresLogin;
-            RequiresCustomLogin = page.RequiresCustomLogin;
-            RequiresRedirects = page.RequiresRedirects;
-        }
-
+        // ✅ COMANDO PARA GUARDAR PÁGINA
         [RelayCommand]
-        private async Task CreatePageAsync()
+        private async Task SavePageAsync()
         {
+            // Validaciones
             if (string.IsNullOrWhiteSpace(PageName))
             {
                 MessageBox.Show("El nombre de la página es obligatorio", "Validación");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(Url))
+            if (string.IsNullOrWhiteSpace(PageUrl))
             {
                 MessageBox.Show("La URL es obligatoria", "Validación");
+                return;
+            }
+
+            if (!Uri.TryCreate(PageUrl, UriKind.Absolute, out _))
+            {
+                MessageBox.Show("La URL no es válida", "Validación");
                 return;
             }
 
@@ -163,8 +123,8 @@ namespace Naviguard.WPF.ViewModels
                 var createDto = new CreatePageDto
                 {
                     PageName = PageName,
-                    Url = Url,
-                    Description = Description,
+                    Description = PageDescription,
+                    Url = PageUrl,
                     RequiresProxy = RequiresProxy,
                     RequiresLogin = RequiresLogin,
                     RequiresCustomLogin = RequiresCustomLogin,
@@ -177,9 +137,9 @@ namespace Naviguard.WPF.ViewModels
 
                 if (result.IsSuccess)
                 {
-                    MessageBox.Show("Página creada correctamente", "Éxito");
-                    ClearForm();
-                    await LoadPagesAsync();
+                    MessageBox.Show($"Página '{PageName}' guardada con éxito", "Éxito");
+                    ClearPageForm();
+                    LoadAvailablePagesAsync(); // Recargar lista
                 }
                 else
                 {
@@ -188,47 +148,44 @@ namespace Naviguard.WPF.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al crear página: {ex.Message}", "Error");
+                MessageBox.Show($"Error al guardar la página: {ex.Message}", "Error");
             }
         }
 
+        // ✅ COMANDO PARA CREAR GRUPO
         [RelayCommand]
-        private async Task UpdatePageAsync()
+        private async Task CreateGroupAsync()
         {
-            if (SelectedPage == null)
+            // Validaciones
+            if (string.IsNullOrWhiteSpace(GroupName))
             {
-                MessageBox.Show("Seleccione una página primero", "Advertencia");
+                MessageBox.Show("El nombre del grupo es obligatorio", "Validación");
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(PageName))
+            var selectedPages = AvailablePages.Where(p => p.IsSelected).ToList();
+            if (selectedPages.Count == 0)
             {
-                MessageBox.Show("El nombre es obligatorio", "Validación");
+                MessageBox.Show("Debes seleccionar al menos una página para el grupo", "Validación");
                 return;
             }
 
             try
             {
-                var updateDto = new UpdatePageDto
+                var createDto = new CreateGroupDto
                 {
-                    PageId = SelectedPage.PageId,
-                    PageName = PageName,
-                    Url = Url,
-                    Description = Description,
-                    RequiresProxy = RequiresProxy,
-                    RequiresLogin = RequiresLogin,
-                    RequiresCustomLogin = RequiresCustomLogin,
-                    RequiresRedirects = RequiresRedirects,
-                    CredentialUsername = CredentialUsername,
-                    CredentialPassword = CredentialPassword
+                    GroupName = GroupName,
+                    Description = GroupDescription,
+                    IsPinned = false, // Por defecto no está fijado
+                    PageIds = selectedPages.Select(p => p.PageData.PageId).ToList()
                 };
 
-                var result = await _pageService.UpdatePageAsync(updateDto);
+                var result = await _groupService.CreateGroupAsync(createDto);
 
                 if (result.IsSuccess)
                 {
-                    MessageBox.Show("Página actualizada correctamente", "Éxito");
-                    await LoadPagesAsync();
+                    MessageBox.Show($"Grupo '{GroupName}' creado con {selectedPages.Count} página(s)", "Éxito");
+                    ClearGroupForm();
                 }
                 else
                 {
@@ -237,62 +194,53 @@ namespace Naviguard.WPF.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al actualizar: {ex.Message}", "Error");
+                MessageBox.Show($"Error al crear el grupo: {ex.Message}", "Error");
             }
         }
 
-        [RelayCommand]
-        private async Task DeletePageAsync()
+        // ✅ MÉTODO PARA LIMPIAR FORMULARIO DE PÁGINA
+        private void ClearPageForm()
         {
-            if (SelectedPage == null)
-            {
-                MessageBox.Show("Seleccione una página primero", "Advertencia");
-                return;
-            }
-
-            var confirmResult = MessageBox.Show(
-                $"¿Está seguro de eliminar la página '{SelectedPage.PageName}'?",
-                "Confirmar eliminación",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (confirmResult == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    var result = await _pageService.DeletePageAsync(SelectedPage.PageId);
-
-                    if (result.IsSuccess)
-                    {
-                        MessageBox.Show("Página eliminada correctamente", "Éxito");
-                        ClearForm();
-                        await LoadPagesAsync();
-                    }
-                    else
-                    {
-                        MessageBox.Show(result.Error, "Error");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error al eliminar: {ex.Message}", "Error");
-                }
-            }
-        }
-
-        [RelayCommand]
-        private void ClearForm()
-        {
-            SelectedPage = null;
             PageName = string.Empty;
-            Url = string.Empty;
-            Description = string.Empty;
+            PageDescription = string.Empty;
+            PageUrl = string.Empty;
             RequiresProxy = false;
             RequiresLogin = false;
             RequiresCustomLogin = false;
             RequiresRedirects = false;
             CredentialUsername = string.Empty;
             CredentialPassword = string.Empty;
+        }
+
+        // ✅ MÉTODO PARA LIMPIAR FORMULARIO DE GRUPO
+        private void ClearGroupForm()
+        {
+            GroupName = string.Empty;
+            GroupDescription = string.Empty;
+
+            // Desmarcar todas las páginas
+            foreach (var page in AvailablePages)
+            {
+                page.IsSelected = false;
+            }
+        }
+    }
+
+    // ✅ CLASE AUXILIAR PARA ITEMS DE LA LISTA
+    public partial class PageListItemViewModel : ObservableObject
+    {
+        [ObservableProperty]
+        private Pagina _pageData;
+
+        [ObservableProperty]
+        private bool _isSelected;
+
+        public string PageName => PageData.PageName;
+
+        public PageListItemViewModel(Pagina page)
+        {
+            _pageData = page;
+            _isSelected = false;
         }
     }
 }

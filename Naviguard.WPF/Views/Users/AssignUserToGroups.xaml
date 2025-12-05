@@ -12,6 +12,7 @@
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:NullToBooleanConverter x:Key="NullToBooleanConverter"/>
     </UserControl.Resources>
     
     <Grid Margin="15">
@@ -42,23 +43,23 @@
                 <ComboBox Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,10,0"
                           ItemsSource="{Binding Departments}"
                           SelectedItem="{Binding SelectedDepartment, Mode=TwoWay}"
-                          DisplayMemberPath="name_department" 
+                          DisplayMemberPath="DepartmentName" 
                           ToolTip="Selecciona un departamento"/>
 
                 <TextBlock Text="Área:" FontSize="14" FontWeight="Bold" Grid.Row="0" Grid.Column="2" Margin="0,0,0,5"/>
                 <ComboBox Grid.Row="1" Grid.Column="2" Height="30" Margin="0,0,10,0"
                           ItemsSource="{Binding Areas}"
                           SelectedItem="{Binding SelectedArea, Mode=TwoWay}"
-                          DisplayMemberPath="name_area"
-                          IsEnabled="{Binding SelectedDepartment, TargetNullValue=False}"
+                          DisplayMemberPath="AreaName"
+                          IsEnabled="{Binding SelectedDepartment, Converter={StaticResource NullToBooleanConverter}}"
                           ToolTip="Selecciona un área"/>
 
                 <TextBlock Text="Subárea:" FontSize="14" FontWeight="Bold" Grid.Row="0" Grid.Column="3" Margin="0,0,0,5"/>
                 <ComboBox Grid.Row="1" Grid.Column="3" Height="30" Margin="0,0,10,0"
                           ItemsSource="{Binding Subareas}"
                           SelectedItem="{Binding SelectedSubarea, Mode=TwoWay}"
-                          DisplayMemberPath="name_subarea"
-                          IsEnabled="{Binding SelectedArea, TargetNullValue=False}"
+                          DisplayMemberPath="SubareaName"
+                          IsEnabled="{Binding SelectedArea, Converter={StaticResource NullToBooleanConverter}}"
                           ToolTip="Selecciona una subárea"/>
 
                 <StackPanel Grid.Row="1" Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
@@ -110,7 +111,7 @@
                                         </ContextMenu>
                                     </Border.ContextMenu>
 
-                                    <TextBlock Text="{Binding full_name}" FontWeight="SemiBold" Foreground="#1C1E21"/>
+                                    <TextBlock Text="{Binding FullName}" FontWeight="SemiBold" Foreground="#1C1E21"/>
                                 </Border>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -124,7 +125,7 @@
                             <TextBlock FontSize="18" FontWeight="Bold" Foreground="#1C1E21">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="Asignar grupos a &quot;{0}&quot;">
-                                        <Binding Path="SelectedUser.full_name"/>
+                                        <Binding Path="SelectedUser.FullName"/>
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
