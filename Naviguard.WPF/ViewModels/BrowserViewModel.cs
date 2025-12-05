@@ -1,5 +1,4 @@
-﻿// Naviguard.WPF/ViewModels/BrowserViewModel.cs
-using CefSharp;
+﻿using CefSharp;
 using CefSharp.Wpf;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -53,18 +52,16 @@ namespace Naviguard.WPF.ViewModels
             Browser = browser;
             _currentPage = page;
 
-            // ✅ Obtener credenciales ANTES de cargar
-            var credentials = await GetCredentialsForPageAsync(page);
-
             // Configurar proxy si es necesario
             if (page.RequiresProxy)
             {
                 await ConfigureProxyAsync();
             }
 
-            // Configurar RequestHandler para inyectar credenciales HTTP
+            // Configurar RequestHandler para inyectar credenciales
             if (page.RequiresLogin || page.RequiresCustomLogin)
             {
+                var credentials = await GetCredentialsForPageAsync(page);
                 if (credentials.HasValue)
                 {
                     var requestHandler = new CustomRequestHandler(
@@ -76,13 +73,10 @@ namespace Naviguard.WPF.ViewModels
                 }
             }
 
-            // ✅ AGREGAR: Suscribirse a eventos
+            // Suscribirse a eventos
             Browser.AddressChanged += OnAddressChanged;
             Browser.TitleChanged += OnTitleChanged;
             Browser.LoadingStateChanged += OnLoadingStateChanged;
-
-            // ✅ NUEVO: Suscribirse a FrameLoadEnd para auto-login
-            Browser.FrameLoadEnd += OnFrameLoadEnd;
 
             // Navegar a la URL
             Browser.Load(page.Url);
@@ -106,39 +100,54 @@ namespace Naviguard.WPF.ViewModels
             }
         }
 
-        private async Task<(string Username, string Password)?> GetCredentialsForPageAsync(Pagina page)
+        // ✅ HACER PÚBLICO para que BrowserView pueda llamarlo
+        public async Task<(string Username, string Password)?> GetCredentialsForPageAsync(Pagina page)
         {
             if (!UserSession.IsLoggedIn) return null;
 
             try
             {
+                // Prioridad 1: Credenciales personalizadas del usuario
                 if (page.RequiresCustomLogin)
                 {
+                    Debug.WriteLine($"[BrowserViewModel] 🔎 Buscando credencial PERSONALIZADA para User: {UserSession.ApiUserId}, Page: {page.PageId}");
+
                     var userCredential = await _credentialRepository.GetCredentialAsync(
                         UserSession.ApiUserId,
                         page.PageId);
 
                     if (userCredential != null)
                     {
-                        Debug.WriteLine($"✅ Credenciales de usuario encontradas para {page.PageName}");
+                        Debug.WriteLine($"[BrowserViewModel] ✅ Credencial PERSONALIZADA encontrada. Usuario: '{userCredential.Username}'");
                         return (userCredential.Username, userCredential.Password);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[BrowserViewModel] ❌ NO se encontró credencial PERSONALIZADA.");
                     }
                 }
 
+                // Prioridad 2: Credenciales generales de la página
                 if (page.RequiresLogin)
                 {
+                    Debug.WriteLine($"[BrowserViewModel] 🔎 Buscando credencial GENERAL para Page: {page.PageId}");
+
                     var pageCredential = await _pageCredentialRepository.GetCredentialByPageIdAsync(page.PageId);
 
                     if (pageCredential != null)
                     {
-                        Debug.WriteLine($"✅ Credenciales de página encontradas para {page.PageName}");
+                        Debug.WriteLine($"[BrowserViewModel] ✅ Credencial GENERAL encontrada. Usuario: '{pageCredential.Username}'");
                         return (pageCredential.Username, pageCredential.Password);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[BrowserViewModel] ❌ NO se encontró credencial GENERAL.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error al obtener credenciales: {ex.Message}");
+                Debug.WriteLine($"[BrowserViewModel] 💥 ERROR AL BUSCAR CREDENCIALES: {ex.Message}");
             }
 
             return null;
@@ -148,7 +157,6 @@ namespace Naviguard.WPF.ViewModels
         {
             if (e.NewValue is string newUrl)
             {
-                // ✅ Ejecutar en UI thread
                 WpfApp.Current.Dispatcher.Invoke(() =>
                 {
                     CurrentUrl = newUrl;
@@ -161,7 +169,6 @@ namespace Naviguard.WPF.ViewModels
         {
             if (e.NewValue is string newTitle)
             {
-                // ✅ Ejecutar en UI thread
                 WpfApp.Current.Dispatcher.Invoke(() =>
                 {
                     PageTitle = newTitle;
@@ -171,7 +178,6 @@ namespace Naviguard.WPF.ViewModels
 
         private void OnLoadingStateChanged(object? sender, LoadingStateChangedEventArgs e)
         {
-            // ✅ Ejecutar en UI thread
             WpfApp.Current.Dispatcher.Invoke(() =>
             {
                 IsLoading = e.IsLoading;
@@ -183,7 +189,6 @@ namespace Naviguard.WPF.ViewModels
         {
             if (Browser != null)
             {
-                // ✅ Ya estamos en el UI thread gracias al Dispatcher
                 try
                 {
                     CanGoBack = Browser.CanGoBack;
@@ -199,7 +204,6 @@ namespace Naviguard.WPF.ViewModels
         [RelayCommand]
         private void GoBack()
         {
-            // ✅ Ejecutar en UI thread
             WpfApp.Current.Dispatcher.Invoke(() =>
             {
                 if (Browser?.CanGoBack == true)
@@ -212,7 +216,6 @@ namespace Naviguard.WPF.ViewModels
         [RelayCommand]
         private void GoForward()
         {
-            // ✅ Ejecutar en UI thread
             WpfApp.Current.Dispatcher.Invoke(() =>
             {
                 if (Browser?.CanGoForward == true)
@@ -225,7 +228,6 @@ namespace Naviguard.WPF.ViewModels
         [RelayCommand]
         private void Refresh()
         {
-            // ✅ Ejecutar en UI thread
             WpfApp.Current.Dispatcher.Invoke(() =>
             {
                 Browser?.Reload();
@@ -235,7 +237,6 @@ namespace Naviguard.WPF.ViewModels
         [RelayCommand]
         private void NavigateToUrl()
         {
-            // ✅ Ejecutar en UI thread
             WpfApp.Current.Dispatcher.Invoke(() =>
             {
                 if (!string.IsNullOrWhiteSpace(CurrentUrl))
@@ -252,149 +253,7 @@ namespace Naviguard.WPF.ViewModels
                 Browser.AddressChanged -= OnAddressChanged;
                 Browser.TitleChanged -= OnTitleChanged;
                 Browser.LoadingStateChanged -= OnLoadingStateChanged;
-                Browser.FrameLoadEnd -= OnFrameLoadEnd;
             }
         }
-        private void OnFrameLoadEnd(object? sender, FrameLoadEndEventArgs e)
-        {
-            // Solo ejecutar en el frame principal
-            if (!e.Frame.IsMain) return;
-
-            Debug.WriteLine($"[BrowserViewModel] FrameLoadEnd para: {e.Url}");
-
-            // Verificar si la página requiere auto-login
-            if (_currentPage == null) return;
-            if (!(_currentPage.RequiresLogin || _currentPage.RequiresCustomLogin)) return;
-
-            // ✅ EJECUTAR EN UI THREAD DE FORMA SEGURA
-            WpfApp.Current?.Dispatcher.BeginInvoke(async () =>
-            {
-                try
-                {
-                    // Obtener credenciales
-                    var credentials = await GetCredentialsForPageAsync(_currentPage);
-                    if (!credentials.HasValue)
-                    {
-                        Debug.WriteLine("[BrowserViewModel] ⚠️ No hay credenciales disponibles");
-                        return;
-                    }
-
-                    Debug.WriteLine($"[BrowserViewModel] 💉 Ejecutando auto-login para: {_currentPage.PageName}");
-
-                    // ✅ Ejecutar script de auto-login
-                    await ExecuteAutoLoginAsync(credentials.Value.Username, credentials.Value.Password);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"[BrowserViewModel] 💥 Error en OnFrameLoadEnd: {ex.Message}");
-                }
-            });
-        }
-
-        private async Task ExecuteAutoLoginAsync(string username, string password)
-        {
-            if (Browser == null)
-            {
-                Debug.WriteLine("[BrowserViewModel] ⚠️ Browser es null");
-                return;
-            }
-
-            try
-            {
-                // ✅ Verificar que el browser aún esté cargado
-                if (Browser.IsBrowserInitialized == false)
-                {
-                    Debug.WriteLine("[BrowserViewModel] ⚠️ Browser no está inicializado");
-                    return;
-                }
-
-                // ✅ Obtener el frame principal de forma segura
-                var frame = Browser.GetMainFrame();
-                if (frame == null || frame.IsValid == false)
-                {
-                    Debug.WriteLine("[BrowserViewModel] ⚠️ Frame principal no válido");
-                    return;
-                }
-
-                // ✅ Escapar caracteres especiales en credenciales
-                string safeUsername = username
-                    .Replace("\\", "\\\\")
-                    .Replace("'", "\\'")
-                    .Replace("\"", "\\\"");
-
-                string safePassword = password
-                    .Replace("\\", "\\\\")
-                    .Replace("'", "\\'")
-                    .Replace("\"", "\\\"");
-
-                // ✅ Script JS con manejo de errores
-                string script = $@"
-            (function() {{
-                try {{
-                    var emailInput = document.getElementById('txtemail');
-                    var passInput = document.getElementById('txtpas');
-                    var caracInput = document.getElementById('txtcarac');
-                    var caracCode = document.getElementById('txtcodcarac');
-                    var loginButton = document.querySelector('.btn_access');
-
-                    if (!emailInput || !passInput || !loginButton) {{
-                        console.log('❌ Elementos de login no encontrados');
-                        return false;
-                    }}
-
-                    emailInput.value = '{safeUsername}';
-                    passInput.value = '{safePassword}';
-                    
-                    if (caracInput && caracCode) {{
-                        caracInput.value = caracCode.value;
-                    }}
-
-                    console.log('✅ Formulario rellenado, haciendo clic en', loginButton);
-                    
-                    // ✅ Esperar un momento antes de hacer clic (por si hay validaciones)
-                    setTimeout(function() {{
-                        loginButton.click();
-                    }}, 100);
-                    
-                    return true;
-                }} catch (ex) {{
-                    console.error('❌ Error en auto-login:', ex);
-                    return false;
-                }}
-            }})();
-        ";
-
-                Debug.WriteLine($"[BrowserViewModel] 📋 Ejecutando script JS");
-
-                // ✅ Ejecutar con timeout
-                var response = await frame.EvaluateScriptAsync(script);
-
-                if (response.Success)
-                {
-                    if (response.Result is bool result && result)
-                    {
-                        Debug.WriteLine("[BrowserViewModel] ✅ Auto-login ejecutado correctamente");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"[BrowserViewModel] ⚠️ Auto-login retornó: {response.Result}");
-                    }
-                }
-                else
-                {
-                    Debug.WriteLine($"[BrowserViewModel] ❌ Error en script: {response.Message}");
-                }
-            }
-            catch (ObjectDisposedException ex)
-            {
-                Debug.WriteLine($"[BrowserViewModel] ⚠️ Browser ya fue liberado: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[BrowserViewModel] 💥 Error en auto-login: {ex.Message}");
-                Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-            }
-        }
-
     }
 }
