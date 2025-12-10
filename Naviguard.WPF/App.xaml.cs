@@ -24,7 +24,6 @@ namespace Naviguard.WPF
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    // Registrar servicios por capas
                     services.AddInfrastructure(context.Configuration);
                     services.AddApplication();
                     services.AddPresentation();
@@ -34,17 +33,18 @@ namespace Naviguard.WPF
 
         protected override async void OnStartup(StartupEventArgs e)
         {
-            // Configurar CefSharp
+            // ✅ Configuración Minimalista (Idéntica a Legacy, estable)
             var settings = new CefSettings()
             {
                 CachePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache"),
                 LogSeverity = LogSeverity.Disable
             };
+
+            // ✅ Inicializar CefSharp con configuración simple
             Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null);
 
             await _host.StartAsync();
 
-            // Mostrar ventana de login (sin DI, porque necesita lógica especial)
             var loginWindow = new Login();
             loginWindow.Show();
 
@@ -53,6 +53,7 @@ namespace Naviguard.WPF
 
         protected override async void OnExit(ExitEventArgs e)
         {
+            // ✅ Apagar CefSharp de forma ordenada
             Cef.Shutdown();
 
             using (_host)

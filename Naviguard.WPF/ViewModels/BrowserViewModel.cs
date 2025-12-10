@@ -57,26 +57,33 @@ namespace Naviguard.WPF.ViewModels
             Browser.LifeSpanHandler = new CustomLifeSpanHandler();
             Debug.WriteLine("[BrowserViewModel] LifeSpanHandler configurado");
 
+            // ✅ Configurar JsDialogHandler para auto-aceptar diálogos JavaScript
+            Browser.JsDialogHandler = new CustomJsDialogHandler();
+            Debug.WriteLine("[BrowserViewModel] JsDialogHandler configurado");
+
             // Configurar proxy si es necesario
             if (page.RequiresProxy)
             {
                 await ConfigureProxyAsync();
             }
 
-            // NO usar RequestHandler para auto-login (se hace solo con JavaScript)
-            if (page.RequiresProxy)
-            {
-                var credentials = await GetCredentialsForPageAsync(page);
-                if (credentials.HasValue)
-                {
-                    var requestHandler = new CustomRequestHandler(
-                        credentials.Value.Username,
-                        credentials.Value.Password,
-                        page.RequiresRedirects);
+            // ✅ SIEMPRE configurar RequestHandler para restricción de dominio
+            var credentials = page.RequiresProxy 
+                ? await GetCredentialsForPageAsync(page) 
+                : null;
 
-                    Browser.RequestHandler = requestHandler;
-                }
-            }
+            var requestHandler = new CustomRequestHandler(
+                credentials?.Username ?? "",
+                credentials?.Password ?? "",
+                page.RequiresRedirects);
+
+            // ✅ Establecer el dominio base permitido desde la URL de la página
+            var pageUri = new Uri(page.Url);
+            var baseDomain = ExtractBaseDomain(pageUri.Host);
+            requestHandler.AllowedBaseDomain = baseDomain;
+            Debug.WriteLine($"[BrowserViewModel] 🔒 Restricción de dominio configurada: {baseDomain}");
+
+            Browser.RequestHandler = requestHandler;
 
             // Suscribirse a eventos
             Browser.AddressChanged += OnAddressChanged;
@@ -86,6 +93,27 @@ namespace Naviguard.WPF.ViewModels
             // Navegar a la URL
             Browser.Load(page.Url);
             CurrentUrl = page.Url;
+        }
+
+        /// <summary>
+        /// Extrae el dominio base de un host (ej: "maps.google.com" -> "google.com")
+        /// </summary>
+        private static string ExtractBaseDomain(string host)
+        {
+            var lowerHost = host.ToLowerInvariant();
+            
+            // Eliminar "www." si existe
+            if (lowerHost.StartsWith("www."))
+                lowerHost = lowerHost.Substring(4);
+
+            // Extraer las últimas 2 partes del dominio
+            var parts = lowerHost.Split('.');
+            if (parts.Length >= 2)
+            {
+                return $"{parts[parts.Length - 2]}.{parts[parts.Length - 1]}";
+            }
+
+            return lowerHost;
         }
 
         private async Task ConfigureProxyAsync()
@@ -255,6 +283,15 @@ namespace Naviguard.WPF.ViewModels
                 Browser.AddressChanged -= OnAddressChanged;
                 Browser.TitleChanged -= OnTitleChanged;
                 Browser.LoadingStateChanged -= OnLoadingStateChanged;
+
+                // ✅ Limpiar referencias a handlers para prevenir leaks/crashes
+                Browser.LifeSpanHandler = null;
+                Browser.RequestHandler = null;
+                Browser.JsDialogHandler = null; // También limpiar este si se usara
+                
+                // NOTA: No llamamos Dispose() del Browser porque CefSharp lo maneja
+                // pero sí debemos limpiar nuestras referencias
+                Browser = null;
             }
         }
     }

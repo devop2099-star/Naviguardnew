@@ -77,15 +77,17 @@ namespace Naviguard.WPF.Views
         {
             if (this.WindowState == WindowState.Maximized)
             {
-                // ✅ Ajustar márgenes cuando está maximizada
-                this.BorderThickness = new Thickness(8);
+                // ✅ Cuando está maximizada: sin bordes redondeados ni márgenes extra
+                this.BorderThickness = new Thickness(0);
                 MainBorder.CornerRadius = new CornerRadius(0);
+                MainBorder.Margin = new Thickness(0);
             }
             else
             {
                 // ✅ Restaurar cuando está normal
                 this.BorderThickness = new Thickness(0);
                 MainBorder.CornerRadius = new CornerRadius(30);
+                MainBorder.Margin = new Thickness(0);
             }
         }
 
@@ -126,7 +128,6 @@ namespace Naviguard.WPF.Views
 
                         Marshal.StructureToPtr(mmi, lParam, true);
 
-                        Debug.WriteLine($"🖥️ Monitor detectado - WorkArea: {workArea.Left},{workArea.Top} {workArea.Right}x{workArea.Bottom}");
                     }
                 }
 
