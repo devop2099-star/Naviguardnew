@@ -14,5 +14,9 @@
             UserId = userId;
             FullName = fullName;
         }
+        public override string ToString()
+        {
+            return FullName;
+        }
     }
 }

@@ -10,8 +10,8 @@
              Unloaded="UserControl_Unloaded">
     
     <Grid>
-        <!-- Navegador -->
-        <cefSharp:ChromiumWebBrowser x:Name="BrowserControl"/>
+        <!-- Contenedor para el Navegador (Instanciado dinámicamente para aislamiento de sesión) -->
+        <ContentControl x:Name="BrowserContainer"/>
         
         <!-- Overlay de Splash durante autologin -->
         <local:SplashView x:Name="SplashOverlay" 

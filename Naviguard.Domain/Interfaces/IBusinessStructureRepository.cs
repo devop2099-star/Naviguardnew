@@ -12,5 +12,6 @@ namespace Naviguard.Domain.Interfaces
             int? departmentId,
             int? areaId,
             int? subareaId);
+        Task<List<FilteredUser>> GetUsersByIdsAsync(List<long> userIds);
     }
 }

@@ -2,10 +2,12 @@
 using CefSharp.Wpf;
 using Naviguard.Domain.Entities;
 using Naviguard.WPF.ViewModels;
+using Naviguard.WPF.Services; // Necesario para UserSession
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using CefSharp;
+using System.IO;
 
 namespace Naviguard.WPF.Views.Browser
 {
@@ -16,6 +18,9 @@ namespace Naviguard.WPF.Views.Browser
         private (string Username, string Password)? _loginCredentials;
         private bool _isAutoLoginRunning = false;
         private bool _loginExecuted = false;
+        
+        // Mantener referencia al navegador creado dinámicamente
+        private ChromiumWebBrowser? _browser;
 
         public BrowserView()
         {
@@ -31,38 +36,65 @@ namespace Naviguard.WPF.Views.Browser
             _currentPage = page;
             DataContext = viewModel;
 
-            if (BrowserControl is ChromiumWebBrowser browser)
-            {
-                Debug.WriteLine($"[BrowserView] ChromiumWebBrowser encontrado, inicializando...");
+            // ✅ 1. Crear instancia dinámica del navegador
+            _browser = new ChromiumWebBrowser();
 
-                // ✅ Configurar opciones del navegador (solo propiedades que existen)
-                browser.BrowserSettings = new BrowserSettings
+            // ✅ 2. Configurar aislamiento de sesión por Usuario
+            try
+            {
+                if (UserSession.IsLoggedIn)
                 {
-                    Javascript = CefState.Enabled,
-                    JavascriptAccessClipboard = CefState.Enabled,
-                    JavascriptCloseWindows = CefState.Disabled,
-                    LocalStorage = CefState.Enabled,
-                    Databases = CefState.Enabled,
-                    ImageLoading = CefState.Enabled
-                };
+                    long userId = UserSession.ApiUserId;
+                    string userCachePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cache", $"user_{userId}");
+                    
+                    if (!Directory.Exists(userCachePath))
+                    {
+                        Directory.CreateDirectory(userCachePath);
+                    }
 
-                // Suscribirse a eventos
-                browser.FrameLoadEnd += Browser_FrameLoadEnd;
-                browser.FrameLoadStart += Browser_FrameLoadStart; // ✅ Nuevo
-                browser.LoadError += Browser_LoadError;
+                    Debug.WriteLine($"[BrowserView] 🛡️ Configurando aislamiento de sesión en: {userCachePath}");
 
-                // Cargar credenciales
-                _loginCredentials = await viewModel.GetCredentialsForPageAsync(page);
+                    var requestContextSettings = new RequestContextSettings
+                    {
+                        CachePath = userCachePath,
+                        PersistSessionCookies = true
+                    };
 
-                Debug.WriteLine($"[BrowserView] ¿Credenciales listas para usar? -> {(_loginCredentials.HasValue ? "Sí" : "No")}");
-
-                // Inicializar el navegador
-                await viewModel.InitializeBrowserAsync(browser, page);
+                    _browser.RequestContext = new RequestContext(requestContextSettings);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine($"[BrowserView] ERROR: ChromiumWebBrowser NO encontrado");
+                Debug.WriteLine($"[BrowserView] ⚠️ Error al configurar contexto de usuario: {ex.Message}");
+                // Si falla, usará el contexto global por defecto
             }
+
+            // ✅ 3. Configurar opciones del navegador
+            _browser.BrowserSettings = new BrowserSettings
+            {
+                Javascript = CefState.Enabled,
+                JavascriptAccessClipboard = CefState.Enabled,
+                JavascriptCloseWindows = CefState.Disabled,
+                LocalStorage = CefState.Enabled,
+                Databases = CefState.Enabled,
+                ImageLoading = CefState.Enabled
+            };
+
+            // ✅ 4. Agregar al contenedor visual
+            BrowserContainer.Content = _browser;
+
+            // Suscribirse a eventos
+            _browser.FrameLoadEnd += Browser_FrameLoadEnd;
+            _browser.FrameLoadStart += Browser_FrameLoadStart;
+            _browser.LoadError += Browser_LoadError;
+
+            // Cargar credenciales
+            _loginCredentials = await viewModel.GetCredentialsForPageAsync(page);
+
+            Debug.WriteLine($"[BrowserView] ¿Credenciales listas para usar? -> {(_loginCredentials.HasValue ? "Sí" : "No")}");
+
+            // Inicializar el navegador en el ViewModel
+            await viewModel.InitializeBrowserAsync(_browser, page);
         }
 
         // ✅ Nuevo método para detectar inicio de navegación
@@ -226,7 +258,7 @@ namespace Naviguard.WPF.Views.Browser
 
         private async Task ExecuteAutoLoginAsync()
         {
-            if (!_loginCredentials.HasValue || BrowserControl == null)
+            if (!_loginCredentials.HasValue || _browser == null)
             {
                 _isAutoLoginRunning = false;
                 return;
@@ -249,7 +281,7 @@ namespace Naviguard.WPF.Views.Browser
                     return;
                 }
 
-                if (!BrowserControl.IsBrowserInitialized)
+                if (!_browser.IsBrowserInitialized)
                 {
                     Debug.WriteLine($"[BrowserView] Navegador no inicializado");
                     return;
@@ -309,7 +341,7 @@ namespace Naviguard.WPF.Views.Browser
                     }})();
                 ";
 
-                var frame = BrowserControl.GetMainFrame();
+                var frame = _browser.GetMainFrame();
                 if (frame != null)
                 {
                     var response = await frame.EvaluateScriptAsync(script);
@@ -338,14 +370,22 @@ namespace Naviguard.WPF.Views.Browser
         {
             Debug.WriteLine("[BrowserView] Unloaded event");
 
-            if (BrowserControl != null)
+            if (_browser != null)
             {
                 // ✅ Desuscribir TODOS los eventos
-                BrowserControl.FrameLoadEnd -= Browser_FrameLoadEnd;
-                BrowserControl.FrameLoadStart -= Browser_FrameLoadStart;
-                BrowserControl.LoadError -= Browser_LoadError;
+                _browser.FrameLoadEnd -= Browser_FrameLoadEnd;
+                _browser.FrameLoadStart -= Browser_FrameLoadStart;
+                _browser.LoadError -= Browser_LoadError;
 
-                // ✅ NO llamar Dispose aquí, dejar que WPF lo maneje
+                // ✅ IMPORTANTE: Dispose del browser creado dinámicamente
+                // Como nosotros lo creamos, nosotros deberíamos ser responsables de él,
+                // aunque WPF suele limpiar el árbol visual, explícitamente liberar recursos es mejor.
+                try
+                {
+                    _browser.Dispose();
+                }
+                catch { }
+                _browser = null;
             }
 
             _viewModel?.Cleanup();

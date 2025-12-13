@@ -180,5 +180,38 @@ namespace Naviguard.Infrastructure.Repositories
 
             return users;
         }
+
+        public async Task<List<FilteredUser>> GetUsersByIdsAsync(List<long> userIds)
+        {
+            var users = new List<FilteredUser>();
+            if (userIds == null || !userIds.Any()) return users;
+
+            using var conn = _connectionFactory.CreateNexusEcosystemConnection();
+            await conn.OpenAsync();
+
+            var idsString = string.Join(",", userIds);
+            
+            // Usamos una consulta directa con IN porque parametría lista en MySQL puede ser complejo con ADO.NET puro
+            // y los IDs son numéricos controlados (long), riesgo bajo de inyección.
+            var sql = $@"
+                SELECT md.id_user, 
+                       CONCAT_WS(' ', md.name, COALESCE(NULLIF(md.paternal_surname, ''), md.maternal_surname)) AS full_name
+                FROM mother_data md
+                WHERE md.id_user IN ({idsString})";
+
+            using var cmd = new MySqlCommand(sql, conn);
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                users.Add(new FilteredUser
+                {
+                    UserId = reader.GetInt32(0),
+                    FullName = reader.GetString(1)
+                });
+            }
+
+            return users;
+        }
     }
 }

@@ -66,6 +66,7 @@ namespace Naviguard.WPF.DependencyInjection
             services.AddScoped<IPageService, PageService>();
             services.AddScoped<IUserAssignmentService, UserAssignmentService>();
             services.AddScoped<ICredentialService, CredentialService>();
+            services.AddScoped<IMacroService, MacroService>();
             services.AddScoped<AuthenticationService>();
 
             return services;
@@ -78,14 +79,17 @@ namespace Naviguard.WPF.DependencyInjection
             services.AddTransient<EditGroupsViewModel>();
             services.AddTransient<FilterPagesViewModel>();
             services.AddTransient<AssignUserToGroupsViewModel>();
+            services.AddTransient<EditCustomLoginViewModel>(); // ✅ Nuevo
             services.AddTransient<CredentialsUserPageViewModel>();
             services.AddTransient<MenuNaviguardViewModel>();
             services.AddTransient<BrowserViewModel>();
+            services.AddTransient<MarcosViewModel>();
 
             // Views
             services.AddTransient<MenuMain>();
             services.AddTransient<GroupsPages>();
             services.AddTransient<EditGroups>();
+            services.AddTransient<Naviguard.WPF.Views.Credentials.EditCustomLoginView>(); // ✅ Nuevo
             services.AddTransient<FilterPagesNav>();
             services.AddTransient<AssignUserToGroups>();
 

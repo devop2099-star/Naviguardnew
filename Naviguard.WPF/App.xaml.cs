@@ -53,6 +53,13 @@ namespace Naviguard.WPF
 
         protected override async void OnExit(ExitEventArgs e)
         {
+            // ✅ Limpiar cookies al cerrar la aplicación por seguridad
+            try
+            {
+                Naviguard.WPF.ViewModels.BrowserViewModel.ClearGlobalCookies();
+            }
+            catch { /* Ignorar errores al cerrar */ }
+
             // ✅ Apagar CefSharp de forma ordenada
             Cef.Shutdown();
 

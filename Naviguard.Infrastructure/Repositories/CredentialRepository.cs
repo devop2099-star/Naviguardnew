@@ -53,6 +53,39 @@ namespace Naviguard.Infrastructure.Repositories
             return null;
         }
 
+        public async Task<List<UserPageCredential>> GetUsersForPageAsync(long pageId)
+        {
+            var users = new List<UserPageCredential>();
+
+            using var conn = _connectionFactory.CreateNaviguardConnection();
+            await conn.OpenAsync();
+
+            var sql = @"
+                SELECT pagreqlg_id, external_user_id, page_id, username, password 
+                FROM browser_app.pages_requires_login 
+                WHERE page_id = @pageId AND state = 1 
+                ORDER BY username;";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@pageId", pageId);
+
+            using var reader = await cmd.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                users.Add(new UserPageCredential
+                {
+                    PageReqLgId = reader.GetInt64(0),
+                    ExternalUserId = reader.GetInt64(1),
+                    PageId = reader.GetInt64(2),
+                    Username = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
+                    Password = reader.IsDBNull(4) ? string.Empty : reader.GetString(4)
+                });
+            }
+
+            return users;
+        }
+
         public async Task UpdateOrInsertCredentialAsync(long userId, long pageId, string username, string password)
         {
             using var conn = _connectionFactory.CreateNaviguardConnection();
@@ -63,13 +96,29 @@ namespace Naviguard.Infrastructure.Repositories
                 VALUES (@userId, @pageId, @username, @password, 1)
                 ON CONFLICT (external_user_id, page_id) DO UPDATE SET
                     username = EXCLUDED.username,
-                    password = EXCLUDED.password;";
+                    password = EXCLUDED.password,
+                    state = 1;"; // Reactivar si estaba borrado lógico
 
             using var cmd = new NpgsqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@userId", userId);
             cmd.Parameters.AddWithValue("@pageId", pageId);
             cmd.Parameters.AddWithValue("@username", string.IsNullOrEmpty(username) ? DBNull.Value : username);
             cmd.Parameters.AddWithValue("@password", string.IsNullOrEmpty(password) ? DBNull.Value : password);
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        public async Task DeleteCredentialAsync(long userId, long pageId)
+        {
+            using var conn = _connectionFactory.CreateNaviguardConnection();
+            await conn.OpenAsync();
+
+            // Borrado lógico
+            var sql = "UPDATE browser_app.pages_requires_login SET state = 0 WHERE external_user_id = @userId AND page_id = @pageId";
+
+            using var cmd = new NpgsqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@userId", userId);
+            cmd.Parameters.AddWithValue("@pageId", pageId);
 
             await cmd.ExecuteNonQueryAsync();
         }

@@ -78,11 +78,27 @@
                                 <Path Data="{StaticResource manageIcon}" Fill="#041a23" Width="20" Height="20" Stretch="Uniform"/>
                             </Button>
 
+
                             <Rectangle Height="20" Fill="Transparent"/>
 
                             <Button x:Name="btnAssignUserToGroups" ToolTip="Asignar a grupos" Click="btnAssignUserToGroups_Click"
                                 Style="{StaticResource IconButtonStyle}">
                                 <Path Data="{StaticResource assignUserIcon}" Fill="#041a23" Width="20" Height="20" Stretch="Uniform"/>
+                            </Button>
+
+                            <Rectangle Height="20" Fill="Transparent"/>
+
+                            <Button x:Name="btnMarcos" ToolTip="Marcos" Click="btnMarcos_Click"
+                                Style="{StaticResource IconButtonStyle}">
+                                <Path Data="{StaticResource marcosIcon}" Fill="#041a23" Width="20" Height="20" Stretch="Uniform"/>
+                            </Button>
+
+                            <Rectangle Height="20" Fill="Transparent"/>
+
+                            <Button x:Name="btnEditCustomLogin" ToolTip="Edit Custom Login" Click="btnEditCustomLogin_Click"
+                                Style="{StaticResource IconButtonStyle}">
+                                <Path Data="M7,14C5.9,14 5,13.1 5,12C5,10.9 5.9,10 7,10C8.1,10 9,10.9 9,12C9,13.1 8.1,14 7,14M12.65,10C11.83,7.67 9.61,6 7,6C3.13,6 0,9.13 0,13C0,16.87 3.13,20 7,20C9.61,20 11.83,18.33 12.65,16H14V20H18V16H22V10L12.65,10Z" 
+                                      Fill="#041a23" Width="20" Height="20" Stretch="Uniform"/>
                             </Button>
                         </StackPanel>
 

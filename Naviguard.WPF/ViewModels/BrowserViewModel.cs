@@ -294,5 +294,24 @@ namespace Naviguard.WPF.ViewModels
                 Browser = null;
             }
         }
+
+        /// <summary>
+        /// Borra todas las cookies globales (Session y Persistentes).
+        /// Útil al cerrar sesión en la app para evitar que el siguiente usuario
+        /// herede la sesión de WhatsApp u otros sitios.
+        /// </summary>
+        public static void ClearGlobalCookies()
+        {
+            try
+            {
+                // DeleteCookies("", "") borra todas las cookies de todos los dominios
+                Cef.GetGlobalCookieManager().DeleteCookies("", "");
+                Debug.WriteLine("[BrowserViewModel] 🍪 Solicitud de borrado de cookies enviada.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[BrowserViewModel] ❌ Error al borrar cookies: {ex.Message}");
+            }
+        }
     }
 }

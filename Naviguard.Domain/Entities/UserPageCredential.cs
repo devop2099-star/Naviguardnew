@@ -12,6 +12,7 @@ namespace Naviguard.Domain.Entities
         public long PageId { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public string PersonName { get; set; } = string.Empty; // Nombre de la persona (no mapeado en DB local)
 
         // Navegación
         public Pagina? Page { get; set; }

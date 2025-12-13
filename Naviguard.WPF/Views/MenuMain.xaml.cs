@@ -5,6 +5,7 @@ using Naviguard.WPF.Services;
 using Naviguard.WPF.ViewModels;
 using Naviguard.WPF.Views.Browser;
 using Naviguard.WPF.Views.Groups;
+using Naviguard.WPF.Views.Marcos;
 using Naviguard.WPF.Views.Pages;
 using Naviguard.WPF.Views.Users;
 using System.Diagnostics;
@@ -224,11 +225,18 @@ namespace Naviguard.WPF.Views
             btnFilterPages.Visibility = adminVisibility;
             btnEditGroups.Visibility = adminVisibility;
             btnAssignUserToGroups.Visibility = adminVisibility;
+            btnEditCustomLogin.Visibility = adminVisibility; // ✅ Nuevo
+            btnMarcos.Visibility = adminVisibility;
 
-            btnNav_Click(null, null);
+            NavigateToGroups();
         }
 
         private void btnNav_Click(object sender, RoutedEventArgs e)
+        {
+            NavigateToGroups();
+        }
+
+        private void NavigateToGroups()
         {
             _currentMenuViewModel = null;
 
@@ -309,11 +317,33 @@ namespace Naviguard.WPF.Views
             _navigationService.NavigateTo(view);
         }
 
+        private void btnMarcos_Click(object sender, RoutedEventArgs e)
+        {
+            _currentMenuViewModel = null;
+
+            var viewModel = _serviceProvider.GetRequiredService<MarcosViewModel>();
+            var view = new MarcosView { DataContext = viewModel };
+            _navigationService.NavigateTo(view);
+        }
+
+        private void btnEditCustomLogin_Click(object sender, RoutedEventArgs e)
+        {
+            _currentMenuViewModel = null;
+
+            var viewModel = _serviceProvider.GetRequiredService<EditCustomLoginViewModel>();
+            var view = _serviceProvider.GetRequiredService<Naviguard.WPF.Views.Credentials.EditCustomLoginView>();
+            view.DataContext = viewModel;
+            _navigationService.NavigateTo(view);
+        }
+
         private void btnLogout_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 Debug.WriteLine("🔚 Cerrando sesión...");
+
+                // ✅ Limpiar cookies de navegación para evitar persistencia de sesiones (ej. WhatsApp)
+                BrowserViewModel.ClearGlobalCookies();
 
                 UserSession.EndSession();
                 this.Hide();
